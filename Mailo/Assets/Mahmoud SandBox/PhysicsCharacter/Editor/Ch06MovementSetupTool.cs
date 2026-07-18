@@ -27,6 +27,9 @@ public static class Ch06MovementSetupTool
         Animator anim = target.GetComponent<Animator>();
         if (anim == null) anim = Undo.AddComponent<Animator>(target);
 
+        // Record BEFORE any property mutation, including controller assignment
+        Undo.RecordObject(anim, "Fix Ch06 Animator");
+
         if (anim.runtimeAnimatorController == null)
         {
             string[] guids = AssetDatabase.FindAssets("CharacterAnimaiton t:AnimatorController");
@@ -39,7 +42,6 @@ public static class Ch06MovementSetupTool
             else Debug.LogWarning("[Ch06Setup] CharacterAnimaiton controller not found — assign it manually.");
         }
 
-        Undo.RecordObject(anim, "Fix Ch06 Animator");
         anim.applyRootMotion = false;
         anim.updateMode      = AnimatorUpdateMode.AnimatePhysics;
         anim.cullingMode     = AnimatorCullingMode.AlwaysAnimate;
