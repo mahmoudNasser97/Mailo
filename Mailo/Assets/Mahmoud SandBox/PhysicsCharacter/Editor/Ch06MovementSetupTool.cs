@@ -43,7 +43,7 @@ public static class Ch06MovementSetupTool
         }
 
         anim.applyRootMotion = false;
-        anim.updateMode      = AnimatorUpdateMode.AnimatePhysics;
+        anim.updateMode      = AnimatorUpdateMode.Fixed;
         anim.cullingMode     = AnimatorCullingMode.AlwaysAnimate;
         EditorUtility.SetDirty(anim);
 
