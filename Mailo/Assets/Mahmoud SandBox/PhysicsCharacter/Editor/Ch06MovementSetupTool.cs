@@ -47,7 +47,17 @@ public static class Ch06MovementSetupTool
         anim.cullingMode     = AnimatorCullingMode.AlwaysAnimate;
         EditorUtility.SetDirty(anim);
 
-        // 3. Add CharacterController
+        // 3. Fix animated target layer to Player so CharacterController detects Ground
+        //    and does not collide with PuppetMaster muscles (also on Player layer)
+        int playerLayer = LayerMask.NameToLayer("Player");
+        if (playerLayer >= 0)
+        {
+            Undo.RecordObject(target, "Fix Ch06 Layer");
+            target.layer = playerLayer;
+            EditorUtility.SetDirty(target);
+        }
+
+        // 4. Add CharacterController
         CharacterController cc = target.GetComponent<CharacterController>();
         if (cc == null) cc = Undo.AddComponent<CharacterController>(target);
         Undo.RecordObject(cc, "Configure Ch06 CharacterController");
@@ -56,15 +66,15 @@ public static class Ch06MovementSetupTool
         cc.center = new Vector3(0f, 0.9f, 0f);
         EditorUtility.SetDirty(cc);
 
-        // 4. Add PuppetMoverSimple to animated target
+        // 5. Add PuppetMoverSimple to animated target
         PuppetMoverSimple mover = target.GetComponent<PuppetMoverSimple>();
         if (mover == null) mover = Undo.AddComponent<PuppetMoverSimple>(target);
 
-        // 5. Add PuppetRagdollController to the PuppetMaster's GameObject
+        // 6. Add PuppetRagdollController to the PuppetMaster's GameObject
         PuppetRagdollController ctrl = pm.GetComponent<PuppetRagdollController>();
         if (ctrl == null) ctrl = Undo.AddComponent<PuppetRagdollController>(pm.gameObject);
 
-        // 6. Add PuppetImpactReporter to every Rigidbody in the puppet hierarchy
+        // 7. Add PuppetImpactReporter to every Rigidbody in the puppet hierarchy
         var bodies = new List<Rigidbody>();
         foreach (Rigidbody rb in pm.GetComponentsInChildren<Rigidbody>())
         {
@@ -75,7 +85,7 @@ public static class Ch06MovementSetupTool
             bodies.Add(rb);
         }
 
-        // 7. Wire all references on PuppetRagdollController
+        // 8. Wire all references on PuppetRagdollController
         Undo.RecordObject(ctrl, "Wire Ch06 ragdoll references");
         ctrl.pm           = pm;
         ctrl.mover        = mover;
