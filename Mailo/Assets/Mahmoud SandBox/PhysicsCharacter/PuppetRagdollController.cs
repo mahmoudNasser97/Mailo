@@ -7,7 +7,8 @@ public enum PuppetPhysicsState { Balanced, Ragdoll, GettingUp }
 public class PuppetRagdollController : MonoBehaviour
 {
     [Header("Ragdoll")]
-    public float knockdownThreshold   = 20f;
+    public float startupGraceTime     = 2f;
+    public float knockdownThreshold   = 200f;
     public float settleDelay          = 1.5f;
     public float settleSpeedThreshold = 0.4f;
     public float maxSettleWait        = 6f;
@@ -21,9 +22,13 @@ public class PuppetRagdollController : MonoBehaviour
     public PuppetPhysicsState State { get; private set; } = PuppetPhysicsState.Balanced;
 
     bool _knockdownPending;
+    float _readyTime;
+
+    void Start() { _readyTime = Time.time + startupGraceTime; }
 
     public void ReportImpact(float impulse)
     {
+        if (Time.time < _readyTime) return;
         if (State != PuppetPhysicsState.Balanced || _knockdownPending) return;
         if (impulse < knockdownThreshold) return;
         _knockdownPending = true;
