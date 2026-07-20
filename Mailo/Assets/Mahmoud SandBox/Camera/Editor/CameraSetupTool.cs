@@ -62,11 +62,14 @@ public static class CameraSetupTool
         normalCam.Follow   = target.transform;
 
         CinemachineThirdPersonFollow normalFollow = normalGO.AddComponent<CinemachineThirdPersonFollow>();
-        normalFollow.ShoulderOffset      = new Vector3(0.5f, 0f, 0f);
-        normalFollow.VerticalArmLength   = 0.3f;
-        normalFollow.CameraDistance      = 4f;
-        normalFollow.CameraRadius        = 0.2f;
-        normalFollow.CameraCollisionFilter = BuildCollisionMask();
+        normalFollow.ShoulderOffset    = new Vector3(0.5f, 0f, 0f);
+        normalFollow.VerticalArmLength = 0.3f;
+        normalFollow.CameraDistance    = 4f;
+        var normalAvoid = normalFollow.AvoidObstacles;
+        normalAvoid.Enabled         = true;
+        normalAvoid.CameraRadius    = 0.2f;
+        normalAvoid.CollisionFilter = BuildCollisionMask();
+        normalFollow.AvoidObstacles = normalAvoid;
         EditorUtility.SetDirty(normalGO);
 
         LensSettings normalLens = normalCam.Lens;
@@ -82,11 +85,14 @@ public static class CameraSetupTool
         aimCam.Follow   = target.transform;
 
         CinemachineThirdPersonFollow aimFollow = aimGO.AddComponent<CinemachineThirdPersonFollow>();
-        aimFollow.ShoulderOffset      = new Vector3(0.6f, 0f, 0f);
-        aimFollow.VerticalArmLength   = 0.2f;
-        aimFollow.CameraDistance      = 1.8f;
-        aimFollow.CameraRadius        = 0.2f;
-        aimFollow.CameraCollisionFilter = BuildCollisionMask();
+        aimFollow.ShoulderOffset    = new Vector3(0.6f, 0f, 0f);
+        aimFollow.VerticalArmLength = 0.2f;
+        aimFollow.CameraDistance    = 1.8f;
+        var aimAvoid = aimFollow.AvoidObstacles;
+        aimAvoid.Enabled         = true;
+        aimAvoid.CameraRadius    = 0.2f;
+        aimAvoid.CollisionFilter = BuildCollisionMask();
+        aimFollow.AvoidObstacles = aimAvoid;
         EditorUtility.SetDirty(aimGO);
 
         LensSettings aimLens = aimCam.Lens;
