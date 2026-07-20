@@ -11,6 +11,10 @@ public class NPCBrain : MonoBehaviour
     [SerializeField] float _throwRange   = 6f;
     [SerializeField] float _gravity      = 20f;
 
+    [Header("Player")]
+    [Tooltip("Assign the player Transform directly. If left empty, will search for the object tagged 'Player' at startup.")]
+    [SerializeField] Transform _playerTarget;
+
     [Header("Sub-components")]
     [SerializeField] NPCPatroller   _patroller;
     [SerializeField] NPCChaser      _chaser;
@@ -36,8 +40,21 @@ public class NPCBrain : MonoBehaviour
         _ragdoll = GetComponentInParent<PuppetRagdollController>()
                 ?? transform.root.GetComponentInChildren<PuppetRagdollController>();
 
-        GameObject p = GameObject.FindWithTag("Player");
-        if (p != null) Player = p.transform;
+        if (_playerTarget != null)
+        {
+            Player = _playerTarget;
+        }
+        else
+        {
+            GameObject p = GameObject.FindWithTag("Player");
+            if (p != null) Player = p.transform;
+        }
+    }
+
+    void Start()
+    {
+        if (Player == null)
+            Debug.LogWarning($"[NPCBrain] '{name}': No player found. Assign the Player Transform in the Inspector under 'Player Target', or tag your player GameObject with 'Player'.");
     }
 
     void Update()
@@ -53,7 +70,12 @@ public class NPCBrain : MonoBehaviour
             return;
         }
 
-        if (Player == null) return;
+        // Always apply gravity even if player isn't found
+        if (Player == null)
+        {
+            _cc.Move(Vector3.up * _verticalVelocity * Time.deltaTime);
+            return;
+        }
 
         if (State != NPCState.HitReact)
             UpdateStateTransitions();
