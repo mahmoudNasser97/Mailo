@@ -4,6 +4,7 @@ public class NPCChaser : MonoBehaviour
 {
     [SerializeField] float _chaseSpeed   = 4f;
     [SerializeField] float _rotateSpeed  = 8f;
+    [SerializeField] float _stopDistance = 1.5f;
 
     static readonly int _speedHash = Animator.StringToHash("Speed");
 
@@ -37,6 +38,13 @@ public class NPCChaser : MonoBehaviour
         Quaternion desired = Quaternion.LookRotation(toPlayer.normalized);
         transform.rotation = Quaternion.RotateTowards(
             transform.rotation, desired, _rotateSpeed * 360f * Time.deltaTime);
+
+        // Stop pushing once close enough so we don't get jammed against the player's collider
+        if (toPlayer.magnitude <= _stopDistance)
+        {
+            _animator.SetFloat(_speedHash, 0f, 0.1f, Time.deltaTime);
+            return Vector3.zero;
+        }
 
         _animator.SetFloat(_speedHash, 1f, 0.1f, Time.deltaTime);
         return toPlayer.normalized * _chaseSpeed;

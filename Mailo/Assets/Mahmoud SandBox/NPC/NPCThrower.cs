@@ -9,10 +9,11 @@ public class NPCThrower : MonoBehaviour
     [SerializeField] Transform    _handBone;
 
     [Header("Throw")]
-    [SerializeField] float _throwAngle        = 45f;
+    [SerializeField] float _throwAngle        = 50f;
     [SerializeField] float _throwCooldown     = 2.5f;
     [SerializeField] float _throwReleaseDelay = 0.3f;
     [SerializeField] float _rotateSpeed       = 8f;
+    [SerializeField] float _minThrowSpeed     = 8f;
 
     static readonly int _throwHash = Animator.StringToHash("Throw");
 
@@ -100,8 +101,10 @@ public class NPCThrower : MonoBehaviour
         if (_throwablePrefabs == null || _throwablePrefabs.Length == 0) return;
 
         GameObject prefab  = _throwablePrefabs[Random.Range(0, _throwablePrefabs.Length)];
-        Transform  anchor  = _handBone != null ? _handBone : transform;
-        GameObject spawned = Instantiate(prefab, anchor.position, anchor.rotation);
+        // When no hand bone, spawn at chest height instead of the NPC's pivot (feet)
+        Transform  anchor  = _handBone != null ? _handBone : null;
+        Vector3    spawnPos = anchor != null ? anchor.position : transform.position + Vector3.up * 1.4f;
+        GameObject spawned = Instantiate(prefab, spawnPos, transform.rotation);
 
         if (spawned.GetComponent<Pickupable>() == null)
             spawned.AddComponent<Pickupable>();
@@ -120,9 +123,17 @@ public class NPCThrower : MonoBehaviour
         _held.isKinematic = true;
         if (_heldCollider != null) _heldCollider.enabled = false;
 
-        Transform anchor = _handBone != null ? _handBone : transform;
-        _held.transform.SetParent(anchor);
-        _held.transform.localPosition = Vector3.zero;
+        // Parent to hand bone if available, otherwise hold at chest height via the NPC root
+        if (_handBone != null)
+        {
+            _held.transform.SetParent(_handBone);
+            _held.transform.localPosition = Vector3.zero;
+        }
+        else
+        {
+            _held.transform.SetParent(transform);
+            _held.transform.localPosition = Vector3.up * 1.4f;
+        }
         _held.transform.localRotation = Quaternion.identity;
     }
 
@@ -139,14 +150,25 @@ public class NPCThrower : MonoBehaviour
         if (_brain.Player != null)
         {
             Vector3 from = toThrow.transform.position;
-            Vector3 to   = _brain.Player.position + Vector3.up * 1f;
+            // Aim at player chest — avoids throwing at feet or over the head
+            Vector3 to   = _brain.Player.position + Vector3.up * 1.2f;
 
-            if (ThrowMath.TryCalculateVelocity(from, to, _throwAngle, out Vector3 vel))
+            Vector3 vel;
+            if (ThrowMath.TryCalculateVelocity(from, to, _throwAngle, out vel))
             {
-                toThrow.linearVelocity  = vel;
-                toThrow.angularVelocity = Random.insideUnitSphere * 5f;
-                pickable?.MarkThrown(vel);
+                // Guarantee a minimum throw force so close-range throws still feel powerful
+                if (vel.magnitude < _minThrowSpeed)
+                    vel = vel.normalized * _minThrowSpeed;
             }
+            else
+            {
+                // Fallback: direct lob straight at the target with minimum speed
+                vel = (to - from).normalized * _minThrowSpeed;
+            }
+
+            toThrow.linearVelocity  = vel;
+            toThrow.angularVelocity = Random.insideUnitSphere * 5f;
+            pickable?.MarkThrown(vel);
         }
 
         _held         = null;
