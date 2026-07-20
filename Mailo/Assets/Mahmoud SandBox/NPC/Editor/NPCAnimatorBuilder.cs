@@ -49,15 +49,15 @@ public static class NPCAnimatorBuilder
 
         sm.defaultState = idle;
 
-        // Visual positions in the Animator window
+        // Visual positions in the Animator window (set via ChildAnimatorState wrappers)
         sm.entryPosition    = new Vector3(-250,  10);
         sm.anyStatePosition = new Vector3(-250,  80);
         sm.exitPosition     = new Vector3(-250, 150);
-        idle.position       = new Vector3(  50,   0);
-        walk.position       = new Vector3( 300,   0);
-        run.position        = new Vector3( 550,   0);
-        throwSt.position    = new Vector3( 300, 160);
-        hitReact.position   = new Vector3( 550, 160);
+        SetStatePosition(sm, idle,     new Vector3(  50,   0));
+        SetStatePosition(sm, walk,     new Vector3( 300,   0));
+        SetStatePosition(sm, run,      new Vector3( 550,   0));
+        SetStatePosition(sm, throwSt,  new Vector3( 300, 160));
+        SetStatePosition(sm, hitReact, new Vector3( 550, 160));
 
         // ── Assign clips ────────────────────────────────────────────────────
         idle.motion     = FindClip(
@@ -170,6 +170,23 @@ public static class NPCAnimatorBuilder
             }
         }
         return null;
+    }
+
+    // ── Layout helper ──────────────────────────────────────────────────────
+
+    static void SetStatePosition(AnimatorStateMachine sm, AnimatorState target, Vector3 pos)
+    {
+        // ChildAnimatorState is a struct, so we must copy the array, modify, and write back
+        var children = sm.states;
+        for (int i = 0; i < children.Length; i++)
+        {
+            if (children[i].state == target)
+            {
+                children[i].position = pos;
+                break;
+            }
+        }
+        sm.states = children;
     }
 
     // ── Transition helper ───────────────────────────────────────────────────
