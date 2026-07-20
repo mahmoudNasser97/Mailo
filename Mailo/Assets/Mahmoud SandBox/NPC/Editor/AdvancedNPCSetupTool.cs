@@ -67,22 +67,20 @@ public static class AdvancedNPCSetupTool
         }
         else Debug.LogWarning("[AdvancedNPC] PuppetRagdollController not found — run the character movement setup tool first.");
 
-        // Assign AnimatorController if the known asset exists in the project
-        string[] guids = AssetDatabase.FindAssets("CharacterAnimaiton t:AnimatorController");
-        if (guids.Length > 0)
+        // Assign the dedicated NPC AnimatorController (build it if it doesn't exist yet)
+        var ctrl = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(
+            NPCAnimatorBuilder.ControllerPath);
+        if (ctrl == null)
+            ctrl = NPCAnimatorBuilder.Build();
+
+        Animator anim = animTarget.GetComponent<Animator>();
+        if (anim != null && ctrl != null)
         {
-            var ctrl = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(
-                AssetDatabase.GUIDToAssetPath(guids[0]));
-            Animator anim = animTarget.GetComponent<Animator>();
-            if (anim != null && ctrl != null)
-            {
-                Undo.RecordObject(anim, "Assign NPC AnimatorController");
-                anim.runtimeAnimatorController = ctrl;
-                anim.applyRootMotion           = false;
-                EditorUtility.SetDirty(anim);
-            }
+            Undo.RecordObject(anim, "Assign NPC AnimatorController");
+            anim.runtimeAnimatorController = ctrl;
+            anim.applyRootMotion           = false;
+            EditorUtility.SetDirty(anim);
         }
-        else Debug.LogWarning("[AdvancedNPC] 'CharacterAnimaiton' animator controller not found — assign manually on the Animator.");
 
         // Create an NPCSpawner nearby for convenience
         GameObject spawnerGO = new GameObject("NPCSpawner");
