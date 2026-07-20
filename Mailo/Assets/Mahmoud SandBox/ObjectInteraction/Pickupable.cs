@@ -19,10 +19,15 @@ public class Pickupable : MonoBehaviour
         if (!_thrown) return;
         _thrown = false;
 
-        HitReactor reactor = collision.gameObject.GetComponentInParent<HitReactor>();
+        // Search up from the hit bone first; fall back to the whole root hierarchy
+        // so PuppetMaster ragdoll bones (not direct ancestors of HitReactor) still register
+        HitReactor reactor = collision.gameObject.GetComponentInParent<HitReactor>()
+                          ?? collision.transform.root.GetComponentInChildren<HitReactor>();
         if (reactor != null)
         {
-            Vector3 hitPoint = collision.contacts.Length > 0 ? collision.contacts[0].point : collision.transform.position;
+            Vector3 hitPoint = collision.contacts.Length > 0
+                ? collision.contacts[0].point
+                : collision.transform.position;
             reactor.TakeHit(_thrownVelocity.magnitude, _thrownVelocity.normalized, hitPoint);
         }
     }
