@@ -21,7 +21,10 @@ public class Pickupable : MonoBehaviour
 
         HitReactor reactor = collision.gameObject.GetComponentInParent<HitReactor>();
         if (reactor != null)
-            reactor.TakeHit(_thrownVelocity.magnitude, _thrownVelocity.normalized);
+        {
+            Vector3 hitPoint = collision.contacts.Length > 0 ? collision.contacts[0].point : collision.transform.position;
+            reactor.TakeHit(_thrownVelocity.magnitude, _thrownVelocity.normalized, hitPoint);
+        }
     }
 
     void OnDrawGizmos()
