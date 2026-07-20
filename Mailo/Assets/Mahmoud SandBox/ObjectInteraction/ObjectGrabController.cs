@@ -63,8 +63,13 @@ public class ObjectGrabController : MonoBehaviour
 
         if (_held != null)
         {
-            UpdateArc();
-            if (_canThrow && Input.GetMouseButtonDown(0))
+            bool aiming = Input.GetMouseButton(1);   // RMB = aim / show arc
+            if (aiming)
+                UpdateArc();
+            else
+                _arc.enabled = false;
+
+            if (_canThrow && aiming && Input.GetMouseButtonDown(0))  // LMB while aiming = throw
                 Throw();
         }
     }
