@@ -111,7 +111,7 @@ public class ObjectGrabController : MonoBehaviour
         // Use the object's actual world position so the arc starts exactly where it will be released
         Vector3 start = _held.transform.position;
 
-        _canThrow = TryCalculateVelocity(start, target, _throwAngle, out _throwVelocity);
+        _canThrow = ThrowMath.TryCalculateVelocity(start, target, _throwAngle, out _throwVelocity);
 
         if (!_canThrow)
         {
@@ -138,24 +138,6 @@ public class ObjectGrabController : MonoBehaviour
         _arc.enabled = true;
     }
 
-    bool TryCalculateVelocity(Vector3 from, Vector3 to, float angleDeg, out Vector3 velocity)
-    {
-        velocity    = Vector3.zero;
-        Vector3 dir = to - from;
-        float   h   = dir.y;
-        dir.y       = 0f;
-        float dist  = dir.magnitude;
-        if (dist < 0.01f) return false;
-
-        float angle       = angleDeg * Mathf.Deg2Rad;
-        float denominator = dist * Mathf.Sin(2f * angle) - 2f * h * Mathf.Cos(angle) * Mathf.Cos(angle);
-        if (denominator <= 0f) return false;
-
-        float speed = Mathf.Sqrt(Physics.gravity.magnitude * dist * dist / denominator);
-        velocity = dir.normalized * speed * Mathf.Cos(angle)
-                 + Vector3.up     * speed * Mathf.Sin(angle);
-        return true;
-    }
 
     void Drop()
     {
