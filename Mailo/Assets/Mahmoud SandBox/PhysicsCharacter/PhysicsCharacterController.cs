@@ -75,6 +75,9 @@ public class PhysicsCharacterController : MonoBehaviour
     static readonly int _moveXHash = Animator.StringToHash("MoveX");
     static readonly int _moveYHash = Animator.StringToHash("MoveY");
 
+    public bool  IsAiming  { get; set; }
+    public float CameraYaw { get; set; }
+
     void Awake()
     {
         _rb       = GetComponent<Rigidbody>();
@@ -126,21 +129,30 @@ public class PhysicsCharacterController : MonoBehaviour
     {
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
-        Vector3 input = new Vector3(h, 0f, v);
+
+        Vector3 camForward = Vector3.Scale(Camera.main.transform.forward, new Vector3(1f, 0f, 1f)).normalized;
+        Vector3 camRight   = Vector3.Scale(Camera.main.transform.right,   new Vector3(1f, 0f, 1f)).normalized;
+        Vector3 input      = camForward * v + camRight * h;
+        if (input.sqrMagnitude > 1f) input.Normalize();
         bool moving = input.sqrMagnitude > 0.01f;
 
         _rb.linearDamping = moving ? movingDrag : stoppingDrag;
 
         if (moving)
         {
-            input = input.normalized;
-
             Vector3 flatVel = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
             if (flatVel.magnitude < maxMoveSpeed)
                 _rb.AddForce(input * moveForce, ForceMode.Acceleration);
 
-            Quaternion targetRot = Quaternion.LookRotation(input);
+            Quaternion targetRot = IsAiming
+                ? Quaternion.Euler(0f, CameraYaw, 0f)
+                : Quaternion.LookRotation(input);
             _rb.MoveRotation(Quaternion.Slerp(transform.rotation, targetRot, rotateSpeed * Time.fixedDeltaTime));
+        }
+        else if (IsAiming)
+        {
+            _rb.MoveRotation(Quaternion.Slerp(transform.rotation,
+                Quaternion.Euler(0f, CameraYaw, 0f), rotateSpeed * Time.fixedDeltaTime));
         }
 
         _animator.SetFloat(_speedHash, moving ? 1f : 0f,      0.1f, Time.fixedDeltaTime);
