@@ -5,41 +5,36 @@ using RootMotion.Dynamics;
 
 public static class AdvancedNPCSetupTool
 {
-    const string SourceRootName = "Ch06_nonPBR Root";
-    const string AnimTargetName = "Ch06_nonPBR";
-    const string PlayerName     = "ThirdPersonPuppet (1)";
-
-    [MenuItem("Tools/Advanced NPC/Setup Advanced NPC")]
+    [MenuItem("Tools/Advanced NPC/Setup Selected As Advanced NPC")]
     static void SetupAdvancedNPC()
     {
-        GameObject source = GameObject.Find(SourceRootName);
-        if (source == null)
+        GameObject selected = Selection.activeGameObject;
+        if (selected == null)
         {
-            Debug.LogError($"[AdvancedNPC] '{SourceRootName}' not found. Open the scene that contains it first.");
+            Debug.LogError("[AdvancedNPC] Nothing selected. Select a character root or its animated child in the Hierarchy.");
             return;
         }
 
-        // 1. Duplicate hierarchy
-        GameObject npc = Object.Instantiate(source, source.transform.parent);
-        Undo.RegisterCreatedObjectUndo(npc, "Create Advanced NPC");
-        npc.name               = "AdvancedNPC_Ch06";
-        npc.transform.position = source.transform.position + new Vector3(3f, 0f, 0f);
-
-        // 2. Find animated target
-        Transform animTf = npc.transform.Find(AnimTargetName);
-        if (animTf == null)
+        // Detect which object carries the CharacterController — that is the animated target.
+        // Check the selected object first, then fall back to searching its children.
+        GameObject animTarget = FindAnimatedTarget(selected);
+        if (animTarget == null)
         {
-            Debug.LogError($"[AdvancedNPC] '{AnimTargetName}' not found under NPC root.");
-            Undo.DestroyObjectImmediate(npc);
+            Debug.LogError($"[AdvancedNPC] No CharacterController found on '{selected.name}' or its children. " +
+                           "Run the character movement setup tool on this model first.");
             return;
         }
-        GameObject animTarget = animTf.gameObject;
 
-        // 3. Strip old movement components
+        // NPC root = parent of the animated target (or the object itself if it has no parent)
+        GameObject npcRoot = animTarget.transform.parent != null
+            ? animTarget.transform.parent.gameObject
+            : animTarget;
+
+        // Strip legacy movement components if present
         RemoveIfPresent<PuppetMoverSimple>(animTarget);
         RemoveIfPresent<NPCChaseController>(animTarget);
 
-        // 4. Add all new NPC components
+        // Add all NPC components to the animated target
         NPCBrain       brain   = GetOrAdd<NPCBrain>(animTarget);
         NPCPatroller   patrol  = GetOrAdd<NPCPatroller>(animTarget);
         NPCChaser      chaser  = GetOrAdd<NPCChaser>(animTarget);
@@ -48,7 +43,7 @@ public static class AdvancedNPCSetupTool
         NPCRVOAgent    rvo     = GetOrAdd<NPCRVOAgent>(animTarget);
         NPCHitVFX      vfx     = GetOrAdd<NPCHitVFX>(animTarget);
 
-        // 5. Wire Brain's SerializeField references
+        // Wire Brain's sub-component references
         var brainSO = new SerializedObject(brain);
         brainSO.FindProperty("_patroller").objectReferenceValue   = patrol;
         brainSO.FindProperty("_chaser").objectReferenceValue      = chaser;
@@ -58,11 +53,11 @@ public static class AdvancedNPCSetupTool
         brainSO.FindProperty("_hitVFX").objectReferenceValue      = vfx;
         brainSO.ApplyModifiedProperties();
 
-        // 6. HitReactor on NPC root
-        GetOrAdd<HitReactor>(npc);
+        // HitReactor lives on the NPC root so thrown-object collisions propagate up correctly
+        GetOrAdd<HitReactor>(npcRoot);
 
-        // 7. Configure ragdoll for NPC (lower threshold than player's 200)
-        PuppetRagdollController ragdoll = npc.GetComponentInChildren<PuppetRagdollController>();
+        // Lower ragdoll knockdown threshold for NPCs (player threshold stays at 200)
+        PuppetRagdollController ragdoll = npcRoot.GetComponentInChildren<PuppetRagdollController>();
         if (ragdoll != null)
         {
             Undo.RecordObject(ragdoll, "Configure NPC ragdoll");
@@ -70,9 +65,9 @@ public static class AdvancedNPCSetupTool
             ragdoll.knockdownThreshold = 80f;
             EditorUtility.SetDirty(ragdoll);
         }
-        else Debug.LogWarning("[AdvancedNPC] PuppetRagdollController not found — run 'Setup Ch06 Movement' on source first.");
+        else Debug.LogWarning("[AdvancedNPC] PuppetRagdollController not found — run the character movement setup tool first.");
 
-        // 8. Assign AnimatorController
+        // Assign AnimatorController if the known asset exists in the project
         string[] guids = AssetDatabase.FindAssets("CharacterAnimaiton t:AnimatorController");
         if (guids.Length > 0)
         {
@@ -87,19 +82,21 @@ public static class AdvancedNPCSetupTool
                 EditorUtility.SetDirty(anim);
             }
         }
-        else Debug.LogWarning("[AdvancedNPC] 'CharacterAnimaiton' animator controller not found — assign manually.");
+        else Debug.LogWarning("[AdvancedNPC] 'CharacterAnimaiton' animator controller not found — assign manually on the Animator.");
 
-        // 9. Create NPCSpawner in scene
+        // Create an NPCSpawner nearby for convenience
         GameObject spawnerGO = new GameObject("NPCSpawner");
         Undo.RegisterCreatedObjectUndo(spawnerGO, "Create NPCSpawner");
-        spawnerGO.transform.position = source.transform.position + new Vector3(0f, 0f, 8f);
+        spawnerGO.transform.position = npcRoot.transform.position + new Vector3(0f, 0f, 8f);
         spawnerGO.AddComponent<NPCSpawner>();
 
-        EditorSceneManager.MarkSceneDirty(npc.scene);
+        EditorSceneManager.MarkSceneDirty(selected.scene);
 
         Debug.Log(
-            $"[AdvancedNPC] ✓ Created '{npc.name}' at {npc.transform.position}\n" +
-             "  Components: NPCBrain, NPCPatroller, NPCChaser, NPCThrower, NPCHitReaction, NPCRVOAgent, NPCHitVFX\n" +
+            $"[AdvancedNPC] ✓ '{selected.name}' configured as Advanced NPC\n" +
+            $"  Animated target : '{animTarget.name}'\n" +
+            $"  NPC root        : '{npcRoot.name}'\n" +
+             "  Components added: NPCBrain, NPCPatroller, NPCChaser, NPCThrower, NPCHitReaction, NPCRVOAgent, NPCHitVFX\n" +
              "  HitReactor: on NPC root\n" +
              "  Ragdoll knockdownThreshold: 80\n" +
             $"  NPCSpawner: '{spawnerGO.name}' at {spawnerGO.transform.position}\n" +
@@ -108,6 +105,21 @@ public static class AdvancedNPCSetupTool
              "    and NPC Prefab + Wave Configs on NPCSpawner.\n" +
              "  → In Animator: add 'Throw' Trigger and 'HitReact' Trigger parameters.\n" +
              "    Optionally add animation event on Throw clip calling NPCThrower.ReleaseThrowable().");
+    }
+
+    // Greys out the menu item when nothing is selected in the Hierarchy
+    [MenuItem("Tools/Advanced NPC/Setup Selected As Advanced NPC", true)]
+    static bool ValidateSetupAdvancedNPC() => Selection.activeGameObject != null;
+
+    // Returns the first GameObject in the hierarchy (root first, then children)
+    // that carries a CharacterController — that object is the animated target.
+    static GameObject FindAnimatedTarget(GameObject root)
+    {
+        if (root.GetComponent<CharacterController>() != null) return root;
+        foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
+            if (child != root.transform && child.GetComponent<CharacterController>() != null)
+                return child.gameObject;
+        return null;
     }
 
     static T GetOrAdd<T>(GameObject go) where T : Component
