@@ -5,6 +5,7 @@ public class CameraController : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] Camera     _camera;
+    [SerializeField] Transform  _followTarget;   // assign the moving character here
     [SerializeField] GameObject _crosshairUI;
 
     [Header("Orbit")]
@@ -56,7 +57,8 @@ public class CameraController : MonoBehaviour
 
     void Start()
     {
-        _yaw             = transform.eulerAngles.y;
+        if (_followTarget == null) _followTarget = transform;
+        _yaw             = _followTarget.eulerAngles.y;
         _currentDistance = _normalDistance;
         _currentFOV      = _normalFOV;
         SetCursorLock(true);
@@ -99,7 +101,7 @@ public class CameraController : MonoBehaviour
                                _pitchMin, _pitchMax);
 
         Quaternion rot        = Quaternion.Euler(_pitch, _yaw, 0f);
-        Vector3    focusPoint = transform.position + Vector3.up * _heightOffset;
+        Vector3    focusPoint = _followTarget.position + Vector3.up * _heightOffset;
         Vector3    rightShift = rot * Vector3.right * _shoulderOffset;
         Vector3    desiredPos = focusPoint + rightShift + rot * (Vector3.back * _currentDistance);
 
