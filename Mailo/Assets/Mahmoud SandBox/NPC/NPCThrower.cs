@@ -85,6 +85,7 @@ public class NPCThrower : MonoBehaviour
         foreach (Pickupable p in Object.FindObjectsByType<Pickupable>(FindObjectsSortMode.None))
         {
             if (p.transform.parent != null) continue; // already held
+            if (p.IsThrown) continue;                 // in flight — let it land first
             float d = Vector3.Distance(transform.position, p.transform.position);
             if (d < bestDist) { best = p; bestDist = d; }
         }

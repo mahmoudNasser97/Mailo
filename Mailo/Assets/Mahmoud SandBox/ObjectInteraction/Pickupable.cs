@@ -6,6 +6,8 @@ public class Pickupable : MonoBehaviour
     bool    _thrown;
     Vector3 _thrownVelocity;
 
+    public bool IsThrown => _thrown;
+
     public void MarkThrown(Vector3 velocity)
     {
         _thrown         = true;

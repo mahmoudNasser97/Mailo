@@ -111,7 +111,9 @@ public class ObjectGrabController : MonoBehaviour
         Vector3 screenCenter = new Vector3(Screen.width * 0.5f, Screen.height * 0.5f, 0f);
         Ray     ray          = Camera.main.ScreenPointToRay(screenCenter);
 
-        Vector3 target = Physics.Raycast(ray, out RaycastHit hit, _maxThrowRange)
+        // Exclude the player's own layer so the ray doesn't stop at the character's body
+        int     mask   = ~(1 << gameObject.layer);
+        Vector3 target = Physics.Raycast(ray, out RaycastHit hit, _maxThrowRange, mask)
             ? hit.point
             : ray.origin + ray.direction * _maxThrowRange;
 

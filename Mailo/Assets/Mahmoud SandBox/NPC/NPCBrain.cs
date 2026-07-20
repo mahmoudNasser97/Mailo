@@ -25,6 +25,8 @@ public class NPCBrain : MonoBehaviour
     float                   _playerRefreshTimer;
     GameObject[]            _cachedPlayers;
     NPCState                _preHitState = NPCState.Patrol;
+    float                   _hitReactStartTime;
+    const float             MaxHitReactDuration = 3f;
 
     const float PlayerRefreshInterval = 1f;
 
@@ -76,8 +78,16 @@ public class NPCBrain : MonoBehaviour
             return;
         }
 
-        if (State != NPCState.HitReact)
+        if (State == NPCState.HitReact)
+        {
+            // Safety: force recovery if coroutine was lost or took too long
+            if (Time.time - _hitReactStartTime > MaxHitReactDuration)
+                RecoverFromHit();
+        }
+        else
+        {
             UpdateStateTransitions();
+        }
 
         Vector3 desired = GetDesiredVelocity();
         Vector3 moved   = _rvoAgent != null
@@ -160,7 +170,8 @@ public class NPCBrain : MonoBehaviour
     public void ReportHit(float impulse, Vector3 hitPoint, Vector3 hitDir)
     {
         if (State == NPCState.HitReact) return;
-        _preHitState = State;
+        _preHitState       = State;
+        _hitReactStartTime = Time.time;
         ChangeState(NPCState.HitReact);
         _hitVFX?.PlayHitEffects(hitPoint, hitDir);
     }
