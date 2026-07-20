@@ -27,6 +27,19 @@ public class CameraController : MonoBehaviour
     {
         _grab    = GetComponent<ObjectGrabController>();
         _physics = GetComponent<PhysicsCharacterController>();
+
+        if (_cameraPivot == null)
+        {
+            var go = GameObject.Find("CameraPivot");
+            if (go != null) _cameraPivot = go.transform;
+        }
+        if (_aimCamera == null)
+        {
+            var go = GameObject.Find("AimCamera");
+            if (go != null) _aimCamera = go.GetComponent<CinemachineCamera>();
+        }
+        if (_crosshairUI == null)
+            _crosshairUI = GameObject.Find("CrosshairCanvas");
     }
 
     void Start()
@@ -59,15 +72,18 @@ public class CameraController : MonoBehaviour
 
     void LateUpdate()
     {
+        // Always track player — pivot must follow even when cursor is unlocked
+        if (_cameraPivot != null)
+            _cameraPivot.position = transform.position;
+
         if (!_cursorLocked) return;
 
         _yaw   += Input.GetAxis("Mouse X") * _sensitivity;
         _pitch  = Mathf.Clamp(_pitch - Input.GetAxis("Mouse Y") * _sensitivity,
                                _pitchMin, _pitchMax);
 
-        if (_cameraPivot == null) return;
-        _cameraPivot.position = transform.position;
-        _cameraPivot.rotation = Quaternion.Euler(_pitch, _yaw, 0f);
+        if (_cameraPivot != null)
+            _cameraPivot.rotation = Quaternion.Euler(_pitch, _yaw, 0f);
     }
 
     void SetCursorLock(bool locked)
