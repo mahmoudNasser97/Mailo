@@ -38,9 +38,6 @@ public class CameraController : MonoBehaviour
 
     void Awake()
     {
-        _grab    = GetComponent<ObjectGrabController>();
-        _physics = GetComponent<PhysicsCharacterController>();
-
         if (_camera == null)
             _camera = Camera.main;
 
@@ -58,6 +55,15 @@ public class CameraController : MonoBehaviour
     void Start()
     {
         if (_followTarget == null) _followTarget = transform;
+
+        // Search the full hierarchy from followTarget so we find components
+        // on the correct object regardless of where CameraController is mounted
+        Transform root = _followTarget;
+        _grab    = root.GetComponentInParent<ObjectGrabController>()
+                ?? root.GetComponentInChildren<ObjectGrabController>(true);
+        _physics = root.GetComponentInParent<PhysicsCharacterController>()
+                ?? root.GetComponentInChildren<PhysicsCharacterController>(true);
+
         _yaw             = _followTarget.eulerAngles.y;
         _currentDistance = _normalDistance;
         _currentFOV      = _normalFOV;
