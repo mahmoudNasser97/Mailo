@@ -11,10 +11,6 @@ public class NPCBrain : MonoBehaviour
     [SerializeField] float _throwRange   = 6f;
     [SerializeField] float _gravity      = 20f;
 
-    [Header("Player")]
-    [Tooltip("Assign the player Transform directly. If left empty, will search for the object tagged 'Player' at startup.")]
-    [SerializeField] Transform _playerTarget;
-
     [Header("Sub-components")]
     [SerializeField] NPCPatroller   _patroller;
     [SerializeField] NPCChaser      _chaser;
@@ -26,9 +22,13 @@ public class NPCBrain : MonoBehaviour
     CharacterController     _cc;
     PuppetRagdollController _ragdoll;
     float                   _verticalVelocity;
+    float                   _playerRefreshTimer;
+    GameObject[]            _cachedPlayers;
     NPCState                _preHitState = NPCState.Patrol;
 
-    public NPCState State  { get; private set; } = NPCState.Patrol;
+    const float PlayerRefreshInterval = 1f;
+
+    public NPCState  State  { get; private set; } = NPCState.Patrol;
     public Transform Player { get; private set; }
 
     void Awake()
@@ -40,21 +40,13 @@ public class NPCBrain : MonoBehaviour
         _ragdoll = GetComponentInParent<PuppetRagdollController>()
                 ?? transform.root.GetComponentInChildren<PuppetRagdollController>();
 
-        if (_playerTarget != null)
-        {
-            Player = _playerTarget;
-        }
-        else
-        {
-            GameObject p = GameObject.FindWithTag("Player");
-            if (p != null) Player = p.transform;
-        }
+        RefreshPlayers();
     }
 
     void Start()
     {
-        if (Player == null)
-            Debug.LogWarning($"[NPCBrain] '{name}': No player found. Assign the Player Transform in the Inspector under 'Player Target', or tag your player GameObject with 'Player'.");
+        if (_cachedPlayers == null || _cachedPlayers.Length == 0)
+            Debug.LogWarning($"[NPCBrain] '{name}': No GameObjects tagged 'Player' found in scene. Tag your player(s) with 'Player'.");
     }
 
     void Update()
@@ -70,7 +62,14 @@ public class NPCBrain : MonoBehaviour
             return;
         }
 
-        // Always apply gravity even if player isn't found
+        // Periodically refresh the player list to pick up players who join/leave
+        _playerRefreshTimer -= Time.deltaTime;
+        if (_playerRefreshTimer <= 0f)
+            RefreshPlayers();
+
+        // Pick the nearest active player each frame
+        Player = FindNearestPlayer();
+
         if (Player == null)
         {
             _cc.Move(Vector3.up * _verticalVelocity * Time.deltaTime);
@@ -89,6 +88,36 @@ public class NPCBrain : MonoBehaviour
         _cc.Move(moved * Time.deltaTime);
     }
 
+    void RefreshPlayers()
+    {
+        _cachedPlayers      = GameObject.FindGameObjectsWithTag("Player");
+        _playerRefreshTimer = PlayerRefreshInterval;
+    }
+
+    Transform FindNearestPlayer()
+    {
+        if (_cachedPlayers == null || _cachedPlayers.Length == 0) return null;
+
+        Transform nearest = null;
+        float     bestSqr = float.MaxValue;
+        Vector3   selfXZ  = new Vector3(transform.position.x, 0f, transform.position.z);
+
+        foreach (GameObject p in _cachedPlayers)
+        {
+            if (p == null || !p.activeInHierarchy) continue;
+
+            Vector3 pXZ   = new Vector3(p.transform.position.x, 0f, p.transform.position.z);
+            float   sqr   = (pXZ - selfXZ).sqrMagnitude;
+            if (sqr < bestSqr)
+            {
+                bestSqr = sqr;
+                nearest = p.transform;
+            }
+        }
+
+        return nearest;
+    }
+
     void UpdateStateTransitions()
     {
         Vector3 selfXZ   = new Vector3(transform.position.x, 0f, transform.position.z);
@@ -101,7 +130,7 @@ public class NPCBrain : MonoBehaviour
                 if (dist <= _chaseRange) ChangeState(NPCState.Chase);
                 break;
             case NPCState.Chase:
-                if (dist > _chaseRange)      ChangeState(NPCState.Patrol);
+                if (dist > _chaseRange)       ChangeState(NPCState.Patrol);
                 else if (dist <= _throwRange) ChangeState(NPCState.Throw);
                 break;
             case NPCState.Throw:
