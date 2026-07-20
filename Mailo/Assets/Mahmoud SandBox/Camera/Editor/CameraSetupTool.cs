@@ -44,9 +44,13 @@ public static class CameraSetupTool
         EditorUtility.SetDirty(brain);
 
         // ── 3. CameraPivot + CameraTarget ──────────────────────────────────────
+        // Parented to Player so it follows movement through the transform hierarchy.
+        // CameraController sets world-space rotation each frame for mouse orbit.
         GameObject pivot = new GameObject("CameraPivot");
         Undo.RegisterCreatedObjectUndo(pivot, "Create CameraPivot");
-        pivot.transform.SetPositionAndRotation(player.transform.position, Quaternion.identity);
+        pivot.transform.SetParent(player.transform);
+        pivot.transform.localPosition = Vector3.zero;
+        pivot.transform.localRotation = Quaternion.identity;
 
         GameObject target = new GameObject("CameraTarget");
         Undo.RegisterCreatedObjectUndo(target, "Create CameraTarget");
@@ -140,7 +144,7 @@ public static class CameraSetupTool
         Debug.Log(
             "[CameraSetup] ✓ Third-Person Camera Rig created\n" +
             $"  Player            : {player.name}\n" +
-            $"  CameraPivot       : {pivot.name} (scene root)\n" +
+            $"  CameraPivot       : {pivot.name} (child of Player)\n" +
             $"  CameraTarget      : {target.name} at local (0, 1.4, 0)\n" +
             $"  NormalCamera      : priority 10, FOV 65, distance 4\n" +
             $"  AimCamera         : priority 0, FOV 50, distance 1.8\n" +
