@@ -34,6 +34,8 @@ public class ObjectGrabController : MonoBehaviour
     Vector3      _throwVelocity;
     bool         _canThrow;
 
+    public bool IsHoldingObject => _held != null;
+
     void Awake()
     {
         if (_animator == null)
