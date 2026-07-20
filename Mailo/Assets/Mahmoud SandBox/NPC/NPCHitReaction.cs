@@ -32,6 +32,8 @@ public class NPCHitReaction : MonoBehaviour
     void OnDisable()
     {
         if (_hitReactor != null) _hitReactor.OnImpact -= HandleImpact;
+        if (_brain != null && _brain.State == NPCState.HitReact)
+            _brain.RecoverFromHit();
     }
 
     void HandleImpact(float impulse, Vector3 direction, Vector3 hitPoint)

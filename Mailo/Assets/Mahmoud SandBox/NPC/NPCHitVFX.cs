@@ -18,6 +18,8 @@ public class NPCHitVFX : MonoBehaviour
     Material[][]          _originalMats;
     Coroutine             _flashRoutine;
     Coroutine             _shakeRoutine;
+    Camera                _cam;
+    Vector3               _camRestPos;
 
     void Awake()
     {
@@ -25,6 +27,9 @@ public class NPCHitVFX : MonoBehaviour
         _originalMats = new Material[_renderers.Length][];
         for (int i = 0; i < _renderers.Length; i++)
             _originalMats[i] = _renderers[i].materials;
+
+        _cam = Camera.main;
+        if (_cam != null) _camRestPos = _cam.transform.localPosition;
     }
 
     public void PlayHitEffects(Vector3 hitPoint, Vector3 hitDir)
@@ -32,7 +37,11 @@ public class NPCHitVFX : MonoBehaviour
         Vector3 pos = hitPoint != Vector3.zero ? hitPoint : transform.position + Vector3.up;
 
         if (_flashRoutine != null) StopCoroutine(_flashRoutine);
-        if (_shakeRoutine != null) StopCoroutine(_shakeRoutine);
+        if (_shakeRoutine != null)
+        {
+            StopCoroutine(_shakeRoutine);
+            if (_cam != null) _cam.transform.localPosition = _camRestPos;
+        }
         _flashRoutine = StartCoroutine(FlashRoutine());
         _shakeRoutine = StartCoroutine(ShakeRoutine());
         SpawnParticle(pos, hitDir);
@@ -77,22 +86,18 @@ public class NPCHitVFX : MonoBehaviour
 
     IEnumerator ShakeRoutine()
     {
-        Camera cam = Camera.main;
-        if (cam == null) yield break;
+        if (_cam == null) yield break;
 
-        Vector3 origin  = cam.transform.localPosition;
-        float   elapsed = 0f;
-
+        float elapsed = 0f;
         while (elapsed < _shakeDuration)
         {
             float x = (Mathf.PerlinNoise(elapsed * 10f, 0f) * 2f - 1f) * _shakeMagnitude;
             float y = (Mathf.PerlinNoise(0f, elapsed * 10f) * 2f - 1f) * _shakeMagnitude;
-            cam.transform.localPosition = origin + new Vector3(x, y, 0f);
+            _cam.transform.localPosition = _camRestPos + new Vector3(x, y, 0f);
             elapsed += Time.deltaTime;
             yield return null;
         }
-
-        cam.transform.localPosition = origin;
+        _cam.transform.localPosition = _camRestPos;
         _shakeRoutine = null;
     }
 }
