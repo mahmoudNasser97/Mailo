@@ -1,47 +1,55 @@
 using System.Collections;
 using UnityEngine;
 
-// Add this to the Player root alongside HitReactor.
-// Plays a flinch animation on light hits; heavy hits let PuppetRagdollController handle knockdown.
+// Place on the Player root alongside HitReactor.
+// Routes HitReactor.OnImpact to PhysicsCharacterController.ForceRagdoll (knockdown)
+// or a flinch animation (light hit).
 public class PlayerHitReaction : MonoBehaviour
 {
-    [SerializeField] float  _hitThreshold       = 20f;
-    [SerializeField] float  _knockdownThreshold = 80f;
-    [SerializeField] float  _hitRecoverTime     = 0.5f;
-    [SerializeField] string _hitReactStateName  = "HitReact";
-    [SerializeField] float  _crossFadeDuration  = 0.1f;
+    [SerializeField] float  _flinchImpulse    = 20f;   // minimum impulse to play flinch
+    [SerializeField] float  _knockdownImpulse = 80f;   // impulse that triggers full ragdoll
+    [SerializeField] float  _hitRecoverTime   = 0.5f;
+    [SerializeField] string _hitReactStateName = "HitReact";
+    [SerializeField] float  _crossFadeDuration = 0.1f;
 
     static readonly int _hitReactHash = Animator.StringToHash("HitReact");
 
-    HitReactor _hitReactor;
-    Animator   _animator;
-    bool       _inHitReact;
+    HitReactor                 _hitReactor;
+    PhysicsCharacterController _physics;
+    Animator                   _animator;
+    bool                       _inHitReact;
 
     void Awake()
     {
         _hitReactor = GetComponent<HitReactor>();
         if (_hitReactor == null)
-            _hitReactor = GetComponentInChildren<HitReactor>();
+        {
+            _hitReactor = gameObject.AddComponent<HitReactor>();
+        }
+
+        _physics = GetComponent<PhysicsCharacterController>()
+                ?? GetComponentInParent<PhysicsCharacterController>()
+                ?? GetComponentInChildren<PhysicsCharacterController>();
 
         _animator = GetComponentInChildren<Animator>();
     }
 
-    void OnEnable()
-    {
-        if (_hitReactor != null) _hitReactor.OnImpact += HandleImpact;
-    }
-
-    void OnDisable()
-    {
-        if (_hitReactor != null) _hitReactor.OnImpact -= HandleImpact;
-    }
+    void OnEnable()  { if (_hitReactor != null) _hitReactor.OnImpact += HandleImpact; }
+    void OnDisable() { if (_hitReactor != null) _hitReactor.OnImpact -= HandleImpact; }
 
     void HandleImpact(float impulse, Vector3 direction, Vector3 hitPoint)
     {
-        if (impulse < _hitThreshold)        return; // too weak to react
-        if (impulse >= _knockdownThreshold)  return; // ragdoll handles heavy hits
-        if (_inHitReact)                     return; // already reacting
+        if (impulse < _flinchImpulse) return;
 
+        // Heavy hit — trigger full ragdoll fall
+        if (impulse >= _knockdownImpulse && _physics != null)
+        {
+            _physics.ForceRagdoll();
+            return;
+        }
+
+        // Light hit — flinch animation only
+        if (_inHitReact) return;
         if (_animator != null)
         {
             if (_animator.HasState(0, _hitReactHash))

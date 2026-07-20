@@ -24,11 +24,12 @@ public class PhysicsCharacterController : MonoBehaviour
 {
     // ── Movement ──────────────────────────────────────────────────────────────
     [Header("Movement")]
-    public float moveForce    = 25f;
-    public float maxMoveSpeed = 5f;
-    public float rotateSpeed  = 12f;
-    public float movingDrag   = 2f;
-    public float stoppingDrag = 8f;
+    public float moveForce       = 25f;
+    public float maxMoveSpeed    = 5f;
+    public float rotateSpeed     = 12f;
+    public float aimRotateSpeed  = 720f;   // degrees/sec snap when aiming
+    public float movingDrag      = 2f;
+    public float stoppingDrag    = 8f;
 
     // ── Ground ────────────────────────────────────────────────────────────────
     [Header("Ground Check")]
@@ -147,12 +148,16 @@ public class PhysicsCharacterController : MonoBehaviour
             Quaternion targetRot = IsAiming
                 ? Quaternion.Euler(0f, CameraYaw, 0f)
                 : Quaternion.LookRotation(input);
-            _rb.MoveRotation(Quaternion.Slerp(transform.rotation, targetRot, rotateSpeed * Time.fixedDeltaTime));
+
+            Quaternion nextRot = IsAiming
+                ? Quaternion.RotateTowards(transform.rotation, targetRot, aimRotateSpeed * Time.fixedDeltaTime)
+                : Quaternion.Slerp(transform.rotation, targetRot, rotateSpeed * Time.fixedDeltaTime);
+            _rb.MoveRotation(nextRot);
         }
         else if (IsAiming)
         {
-            _rb.MoveRotation(Quaternion.Slerp(transform.rotation,
-                Quaternion.Euler(0f, CameraYaw, 0f), rotateSpeed * Time.fixedDeltaTime));
+            Quaternion aimTarget = Quaternion.Euler(0f, CameraYaw, 0f);
+            _rb.MoveRotation(Quaternion.RotateTowards(transform.rotation, aimTarget, aimRotateSpeed * Time.fixedDeltaTime));
         }
 
         _animator.SetFloat(_speedHash, moving ? 1f : 0f,      0.1f, Time.fixedDeltaTime);
