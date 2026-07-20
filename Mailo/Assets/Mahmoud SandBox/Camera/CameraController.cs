@@ -4,22 +4,34 @@ using Unity.Cinemachine;
 public class CameraController : MonoBehaviour
 {
     [Header("References")]
-    [SerializeField] Transform         _cameraPivot;
-    [SerializeField] CinemachineCamera _aimCamera;
-    [SerializeField] GameObject        _crosshairUI;
+    [SerializeField] Camera     _camera;
+    [SerializeField] GameObject _crosshairUI;
 
     [Header("Orbit")]
-    [SerializeField] float _sensitivity = 2.0f;
-    [SerializeField] float _pitchMin    = -30f;
-    [SerializeField] float _pitchMax    =  60f;
+    [SerializeField] float _sensitivity    = 2.0f;
+    [SerializeField] float _pitchMin       = -30f;
+    [SerializeField] float _pitchMax       =  60f;
 
-    [Header("Aim Camera Priorities")]
-    [SerializeField] int _aimPriority    = 20;
-    [SerializeField] int _normalPriority =  0;
+    [Header("Normal View")]
+    [SerializeField] float _normalDistance = 3.5f;
+    [SerializeField] float _normalFOV      = 65f;
 
-    float                      _yaw;
-    float                      _pitch;
-    bool                       _cursorLocked = true;
+    [Header("Aim View")]
+    [SerializeField] float _aimDistance = 1.8f;
+    [SerializeField] float _aimFOV      = 50f;
+
+    [Header("Position")]
+    [SerializeField] float _shoulderOffset = 0.5f;
+    [SerializeField] float _heightOffset   = 1.4f;
+
+    [Header("Collision")]
+    [SerializeField] LayerMask _collisionMask = ~0;
+
+    float _yaw, _pitch;
+    float _currentDistance;
+    float _currentFOV;
+    bool  _cursorLocked = true;
+
     ObjectGrabController       _grab;
     PhysicsCharacterController _physics;
 
@@ -28,31 +40,26 @@ public class CameraController : MonoBehaviour
         _grab    = GetComponent<ObjectGrabController>();
         _physics = GetComponent<PhysicsCharacterController>();
 
-        if (_cameraPivot == null)
-        {
-            var go = GameObject.Find("CameraPivot");
-            if (go != null) _cameraPivot = go.transform;
-        }
-        if (_aimCamera == null)
-        {
-            var go = GameObject.Find("AimCamera");
-            if (go != null) _aimCamera = go.GetComponent<CinemachineCamera>();
-        }
+        if (_camera == null)
+            _camera = Camera.main;
+
         if (_crosshairUI == null)
             _crosshairUI = GameObject.Find("CrosshairCanvas");
+
+        // Disable CinemachineBrain so we control the camera directly
+        if (_camera != null)
+        {
+            var brain = _camera.GetComponent<CinemachineBrain>();
+            if (brain != null) brain.enabled = false;
+        }
     }
 
     void Start()
     {
-        _yaw = transform.eulerAngles.y;
+        _yaw             = transform.eulerAngles.y;
+        _currentDistance = _normalDistance;
+        _currentFOV      = _normalFOV;
         SetCursorLock(true);
-
-        // Snap pivot to player immediately so Cinemachine never sees a teleport on frame 1
-        if (_cameraPivot != null)
-        {
-            _cameraPivot.position = transform.position;
-            _cameraPivot.rotation = Quaternion.Euler(_pitch, _yaw, 0f);
-        }
     }
 
     void Update()
@@ -64,8 +71,14 @@ public class CameraController : MonoBehaviour
             && _grab != null && _grab.IsHoldingObject
             && Input.GetMouseButton(1);
 
-        if (_aimCamera != null)
-            _aimCamera.Priority = isAiming ? _aimPriority : _normalPriority;
+        // Smooth zoom and FOV for aim transition
+        float targetDist = isAiming ? _aimDistance : _normalDistance;
+        float targetFOV  = isAiming ? _aimFOV      : _normalFOV;
+        _currentDistance = Mathf.Lerp(_currentDistance, targetDist, Time.deltaTime * 12f);
+        _currentFOV      = Mathf.Lerp(_currentFOV,      targetFOV,  Time.deltaTime * 12f);
+
+        if (_camera != null)
+            _camera.fieldOfView = _currentFOV;
 
         if (_crosshairUI != null)
             _crosshairUI.SetActive(isAiming);
@@ -79,18 +92,25 @@ public class CameraController : MonoBehaviour
 
     void LateUpdate()
     {
-        // Always track player — pivot must follow even when cursor is unlocked
-        if (_cameraPivot != null)
-            _cameraPivot.position = transform.position;
-
-        if (!_cursorLocked) return;
+        if (!_cursorLocked || _camera == null) return;
 
         _yaw   += Input.GetAxis("Mouse X") * _sensitivity;
         _pitch  = Mathf.Clamp(_pitch - Input.GetAxis("Mouse Y") * _sensitivity,
                                _pitchMin, _pitchMax);
 
-        if (_cameraPivot != null)
-            _cameraPivot.rotation = Quaternion.Euler(_pitch, _yaw, 0f);
+        Quaternion rot        = Quaternion.Euler(_pitch, _yaw, 0f);
+        Vector3    focusPoint = transform.position + Vector3.up * _heightOffset;
+        Vector3    rightShift = rot * Vector3.right * _shoulderOffset;
+        Vector3    desiredPos = focusPoint + rightShift + rot * (Vector3.back * _currentDistance);
+
+        // Simple collision: push camera forward if something is in the way
+        Vector3 origin = focusPoint + rightShift;
+        if (Physics.Linecast(origin, desiredPos, out RaycastHit hit, _collisionMask))
+            _camera.transform.position = hit.point + hit.normal * 0.15f;
+        else
+            _camera.transform.position = desiredPos;
+
+        _camera.transform.LookAt(focusPoint + rightShift * 0.3f);
     }
 
     void SetCursorLock(bool locked)
