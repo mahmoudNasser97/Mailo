@@ -18,7 +18,8 @@ public class NPCChaser : MonoBehaviour
 
     public Vector3 GetDesiredVelocity()
     {
-        if (_brain.State != NPCState.Chase || _brain.Player == null)
+        bool activeState = _brain.State == NPCState.Chase || _brain.State == NPCState.Throw;
+        if (!activeState || _brain.Player == null)
         {
             _animator.SetFloat(_speedHash, 0f, 0.1f, Time.deltaTime);
             return Vector3.zero;

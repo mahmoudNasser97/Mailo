@@ -148,9 +148,10 @@ public class NPCBrain : MonoBehaviour
     {
         return State switch
         {
-            NPCState.Patrol   => _patroller  != null ? _patroller.GetDesiredVelocity()  : Vector3.zero,
-            NPCState.Chase    => _chaser     != null ? _chaser.GetDesiredVelocity()      : Vector3.zero,
-            NPCState.Throw    => Vector3.zero,
+            NPCState.Patrol   => _patroller != null ? _patroller.GetDesiredVelocity() : Vector3.zero,
+            // Keep moving toward player while throwing — only the throw animation briefly pauses movement
+            NPCState.Chase    => _chaser    != null ? _chaser.GetDesiredVelocity()    : Vector3.zero,
+            NPCState.Throw    => _chaser    != null ? _chaser.GetDesiredVelocity()    : Vector3.zero,
             NPCState.HitReact => Vector3.zero,
             _                 => Vector3.zero,
         };
