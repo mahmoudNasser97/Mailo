@@ -70,6 +70,8 @@ public static class CameraSetupTool
         normalAvoid.CameraRadius    = 0.2f;
         normalAvoid.CollisionFilter = BuildCollisionMask();
         normalFollow.AvoidObstacles = normalAvoid;
+        normalFollow.CameraSide     = 1f;
+        normalFollow.Damping        = Vector3.zero;
         EditorUtility.SetDirty(normalGO);
 
         LensSettings normalLens = normalCam.Lens;
@@ -93,6 +95,8 @@ public static class CameraSetupTool
         aimAvoid.CameraRadius    = 0.2f;
         aimAvoid.CollisionFilter = BuildCollisionMask();
         aimFollow.AvoidObstacles = aimAvoid;
+        aimFollow.CameraSide     = 1f;
+        aimFollow.Damping        = Vector3.zero;
         EditorUtility.SetDirty(aimGO);
 
         LensSettings aimLens = aimCam.Lens;

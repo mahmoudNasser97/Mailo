@@ -46,6 +46,13 @@ public class CameraController : MonoBehaviour
     {
         _yaw = transform.eulerAngles.y;
         SetCursorLock(true);
+
+        // Snap pivot to player immediately so Cinemachine never sees a teleport on frame 1
+        if (_cameraPivot != null)
+        {
+            _cameraPivot.position = transform.position;
+            _cameraPivot.rotation = Quaternion.Euler(_pitch, _yaw, 0f);
+        }
     }
 
     void Update()
