@@ -13,27 +13,25 @@ public class CameraController : MonoBehaviour
     [SerializeField] float _pitchMin    = -30f;
     [SerializeField] float _pitchMax    =  60f;
 
+    // Offset is in camera-relative space: X = right, Y = up, Z = forward
     [Header("Normal View")]
-    [SerializeField] float _normalDistance      = 3.5f;
-    [SerializeField] float _normalFOV           = 65f;
-    [SerializeField] float _normalShoulderOffset = 0.4f;
-    [SerializeField] float _normalHeightOffset   = 1.2f;
+    [SerializeField] Vector3 _normalOffset   = new Vector3(0.4f, 1.2f, 0f);
+    [SerializeField] float   _normalDistance = 3.5f;
+    [SerializeField] float   _normalFOV      = 65f;
 
     [Header("Aim View")]
-    [SerializeField] float _aimDistance      = 2.5f;
-    [SerializeField] float _aimFOV           = 50f;
-    [SerializeField] float _aimShoulderOffset = 0.8f;
-    [SerializeField] float _aimHeightOffset   = 1.2f;
+    [SerializeField] Vector3 _aimOffset   = new Vector3(0.7f, 1.2f, 0f);
+    [SerializeField] float   _aimDistance = 2.5f;
+    [SerializeField] float   _aimFOV      = 50f;
 
-    [Header("Transition Speed")]
-    [SerializeField] float _aimTransitionSpeed = 12f;
+    [Header("Transition")]
+    [SerializeField] float _transitionSpeed = 12f;
 
-    float _yaw, _pitch;
-    float _currentDistance;
-    float _currentFOV;
-    float _currentShoulder;
-    float _currentHeight;
-    bool  _cursorLocked = true;
+    Vector3 _currentOffset;
+    float   _currentDistance;
+    float   _currentFOV;
+    float   _yaw, _pitch;
+    bool    _cursorLocked = true;
 
     ObjectGrabController       _grab;
     PhysicsCharacterController _physics;
@@ -66,10 +64,9 @@ public class CameraController : MonoBehaviour
                 ?? FindFirstObjectByType<PhysicsCharacterController>();
 
         _yaw             = _followTarget.eulerAngles.y;
+        _currentOffset   = _normalOffset;
         _currentDistance = _normalDistance;
         _currentFOV      = _normalFOV;
-        _currentShoulder = _normalShoulderOffset;
-        _currentHeight   = _normalHeightOffset;
         SetCursorLock(true);
     }
 
@@ -82,16 +79,10 @@ public class CameraController : MonoBehaviour
             && _grab != null && _grab.IsHoldingObject
             && Input.GetMouseButton(1);
 
-        float targetDist     = isAiming ? _aimDistance       : _normalDistance;
-        float targetFOV      = isAiming ? _aimFOV            : _normalFOV;
-        float targetShoulder = isAiming ? _aimShoulderOffset  : _normalShoulderOffset;
-        float targetHeight   = isAiming ? _aimHeightOffset    : _normalHeightOffset;
-
-        float t = Time.deltaTime * _aimTransitionSpeed;
-        _currentDistance = Mathf.Lerp(_currentDistance, targetDist,     t);
-        _currentFOV      = Mathf.Lerp(_currentFOV,      targetFOV,      t);
-        _currentShoulder = Mathf.Lerp(_currentShoulder, targetShoulder, t);
-        _currentHeight   = Mathf.Lerp(_currentHeight,   targetHeight,   t);
+        float t = Time.deltaTime * _transitionSpeed;
+        _currentOffset   = Vector3.Lerp(_currentOffset,   isAiming ? _aimOffset   : _normalOffset,   t);
+        _currentDistance = Mathf.Lerp (_currentDistance,  isAiming ? _aimDistance : _normalDistance,  t);
+        _currentFOV      = Mathf.Lerp (_currentFOV,       isAiming ? _aimFOV      : _normalFOV,       t);
 
         if (_camera != null)
             _camera.fieldOfView = _currentFOV;
@@ -114,21 +105,24 @@ public class CameraController : MonoBehaviour
         _pitch  = Mathf.Clamp(_pitch - Input.GetAxis("Mouse Y") * _sensitivity,
                                _pitchMin, _pitchMax);
 
-        Quaternion rot        = Quaternion.Euler(_pitch, _yaw, 0f);
-        Vector3    focusPoint = _followTarget.position + Vector3.up * _currentHeight;
-        Vector3    rightShift = rot * Vector3.right * _currentShoulder;
-        Vector3    desiredPos = focusPoint + rightShift + rot * (Vector3.back * _currentDistance);
+        Quaternion rot = Quaternion.Euler(_pitch, _yaw, 0f);
 
-        int     charLayer = _followTarget.gameObject.layer;
-        int     mask      = ~(1 << charLayer);
-        Vector3 origin    = focusPoint + rightShift;
+        // World-space anchor: Y is always world-up, X/Z are camera-relative
+        Vector3 anchor    = _followTarget.position
+                          + Vector3.up * _currentOffset.y
+                          + rot * new Vector3(_currentOffset.x, 0f, _currentOffset.z);
+        Vector3 desiredPos = anchor + rot * (Vector3.back * _currentDistance);
 
-        if (Physics.Linecast(origin, desiredPos, out RaycastHit hit, mask))
+        // Collision — exclude the character's own layer
+        int mask = ~(1 << _followTarget.gameObject.layer);
+        if (Physics.Linecast(anchor, desiredPos, out RaycastHit hit, mask))
             _camera.transform.position = hit.point + hit.normal * 0.15f;
         else
             _camera.transform.position = desiredPos;
 
-        _camera.transform.LookAt(focusPoint + rightShift * 0.4f);
+        // Look at character at height Y (ignoring X/Z offset so char stays in frame)
+        Vector3 lookTarget = _followTarget.position + Vector3.up * _currentOffset.y;
+        _camera.transform.LookAt(lookTarget);
     }
 
     void SetCursorLock(bool locked)
