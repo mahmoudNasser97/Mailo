@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using RootMotion.Dynamics;
 using RootMotion.Demos;
+using PMMuscle = RootMotion.Dynamics.Muscle;
 
 public class ThirdPersonCharacterSetupTool : EditorWindow
 {
@@ -250,7 +251,7 @@ public class ThirdPersonCharacterSetupTool : EditorWindow
         pm.muscleSpring = 100f;
 
         var joints  = pmGo.GetComponentsInChildren<ConfigurableJoint>(true);
-        var muscles = new Muscle[joints.Length];
+        var muscles = new PMMuscle[joints.Length];
 
         for (int i = 0; i < joints.Length; i++)
         {
@@ -260,11 +261,11 @@ public class ThirdPersonCharacterSetupTool : EditorWindow
             if (animBone == null)
                 Log($"WARNING: No animation bone found for physics bone '{joint.gameObject.name}'");
 
-            muscles[i] = new Muscle
+            muscles[i] = new PMMuscle
             {
                 joint  = joint,
                 target = animBone,
-                props  = new Muscle.Props(),
+                props  = new PMMuscle.Props(),
             };
         }
 
@@ -325,7 +326,7 @@ public class ThirdPersonCharacterSetupTool : EditorWindow
         anim.runtimeAnimatorController = controller;
         anim.avatar          = avatar;
         anim.applyRootMotion = true;
-        anim.updateMode      = AnimatorUpdateMode.AnimatePhysics;
+        anim.updateMode      = AnimatorUpdateMode.Fixed;
 
         acGo.AddComponent<CharacterAnimationThirdPerson>();
     }
