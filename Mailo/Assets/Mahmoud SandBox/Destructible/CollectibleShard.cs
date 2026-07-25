@@ -23,11 +23,11 @@ namespace MailoGame
             col.isTrigger = true;
             col.radius = 1.5f;
 
-            _prompt = Instantiate(buttonPromptPrefab, transform.position + Vector3.up * 1.5f, Quaternion.identity);
+            _prompt = Instantiate(buttonPromptPrefab, transform.position + Vector3.left * 2f + Vector3.up * 0.5f, Quaternion.identity);
             _prompt.transform.SetParent(transform);
-            _prompt.transform.localPosition = Vector3.up * 1.5f;
+            _prompt.transform.localPosition = Vector3.left * 2f + Vector3.up * 0.5f;
             _prompt.Initialization();
-            _prompt.SetText($"Press F to collect {itemName}");
+            _prompt.SetText("F");
         }
 
         private void OnDestroy()
@@ -39,7 +39,7 @@ namespace MailoGame
         private void OnTriggerEnter(Collider other)
         {
             if (_prompt == null) return;
-            if (!other.CompareTag("Player")) return;
+            if (!other.transform.root.CompareTag("Player")) return;
             _playerInRange = true;
             _prompt.Show();
         }
@@ -47,7 +47,7 @@ namespace MailoGame
         private void OnTriggerExit(Collider other)
         {
             if (_prompt == null) return;
-            if (!other.CompareTag("Player")) return;
+            if (!other.transform.root.CompareTag("Player")) return;
             _playerInRange = false;
             _prompt.Hide();
         }

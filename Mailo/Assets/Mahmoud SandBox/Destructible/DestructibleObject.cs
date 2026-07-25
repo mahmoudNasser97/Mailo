@@ -12,6 +12,7 @@ namespace MailoGame
         [SerializeField] private string itemName = "Wood Fragment";
         [SerializeField] private ButtonPrompt buttonPromptPrefab;
         [SerializeField] private RayfireRigid rayfireRigid;
+        [SerializeField] private GameObject collectiblePrefab;
 
         private bool _playerInRange;
         private bool _canInteract = true;
@@ -32,9 +33,9 @@ namespace MailoGame
                 enabled = false;
                 return;
             }
-            _prompt = Instantiate(buttonPromptPrefab, transform.position + Vector3.up * 1.5f, Quaternion.identity);
+            _prompt = Instantiate(buttonPromptPrefab, transform.position + Vector3.left * 2f + Vector3.up * 0.5f, Quaternion.identity);
             _prompt.Initialization();
-            _prompt.SetText("Press T to break");
+            _prompt.SetText("T");
             rayfireRigid.demolitionEvent.LocalEvent += OnDemolished;
         }
 
@@ -49,7 +50,7 @@ namespace MailoGame
         private void OnTriggerEnter(Collider other)
         {
             if (_prompt == null) return;
-            if (!other.CompareTag("Player")) return;
+            if (!other.transform.root.CompareTag("Player")) return;
             _playerInRange = true;
             _playerAnimator = other.transform.root.GetComponentInChildren<Animator>();
             if (_canInteract)
@@ -59,7 +60,7 @@ namespace MailoGame
         private void OnTriggerExit(Collider other)
         {
             if (_prompt == null) return;
-            if (!other.CompareTag("Player")) return;
+            if (!other.transform.root.CompareTag("Player")) return;
             _playerInRange = false;
             _prompt.Hide();
         }
@@ -87,13 +88,25 @@ namespace MailoGame
 
         private void OnDemolished(RayfireRigid rigid)
         {
-            if (rigid.fragments == null || rigid.fragments.Count == 0) return;
-            int index = Random.Range(0, rigid.fragments.Count);
-            var shard = rigid.fragments[index];
-            var collectible = shard.gameObject.AddComponent<CollectibleShard>();
-            collectible.itemName = itemName;
-            collectible.buttonPromptPrefab = buttonPromptPrefab;
+            Vector3 spawnPos = transform.position + Vector3.up * 0.5f;
+
+            GameObject item = collectiblePrefab != null
+                ? Instantiate(collectiblePrefab, spawnPos, Quaternion.identity)
+                : CreateDefaultItem(spawnPos);
+
+            var shard = item.AddComponent<CollectibleShard>();
+            shard.itemName = itemName;
+            shard.buttonPromptPrefab = buttonPromptPrefab;
             enabled = false;
+        }
+
+        private GameObject CreateDefaultItem(Vector3 position)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            go.transform.position = position;
+            go.transform.localScale = Vector3.one * 0.3f;
+            go.AddComponent<Rigidbody>();
+            return go;
         }
     }
 }
