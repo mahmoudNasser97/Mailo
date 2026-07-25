@@ -25,6 +25,12 @@ namespace MailoGame
             }
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            if (notificationText == null)
+            {
+                Debug.LogError("[PickupCounter] notificationText not assigned.", this);
+                enabled = false;
+                return;
+            }
             notificationText.alpha = 0f;
         }
 

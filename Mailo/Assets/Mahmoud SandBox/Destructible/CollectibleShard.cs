@@ -13,11 +13,19 @@ namespace MailoGame
 
         private void Start()
         {
+            if (buttonPromptPrefab == null)
+            {
+                Debug.LogError("[CollectibleShard] buttonPromptPrefab not assigned.", this);
+                enabled = false;
+                return;
+            }
             var col = gameObject.AddComponent<SphereCollider>();
             col.isTrigger = true;
             col.radius = 1.5f;
 
             _prompt = Instantiate(buttonPromptPrefab, transform.position + Vector3.up * 1.5f, Quaternion.identity);
+            _prompt.transform.SetParent(transform);
+            _prompt.transform.localPosition = Vector3.up * 1.5f;
             _prompt.Initialization();
             _prompt.SetText($"Press F to collect {itemName}");
         }
@@ -30,6 +38,7 @@ namespace MailoGame
 
         private void OnTriggerEnter(Collider other)
         {
+            if (_prompt == null) return;
             if (!other.CompareTag("Player")) return;
             _playerInRange = true;
             _prompt.Show();
@@ -37,6 +46,7 @@ namespace MailoGame
 
         private void OnTriggerExit(Collider other)
         {
+            if (_prompt == null) return;
             if (!other.CompareTag("Player")) return;
             _playerInRange = false;
             _prompt.Hide();
