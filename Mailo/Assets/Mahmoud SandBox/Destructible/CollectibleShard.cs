@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using MoreMountains.TopDownEngine;
 
@@ -23,11 +24,28 @@ namespace MailoGame
             col.isTrigger = true;
             col.radius = 1.5f;
 
+            var glow = gameObject.AddComponent<Light>();
+            glow.type = LightType.Point;
+            glow.color = new Color(1f, 0.75f, 0.1f);
+            glow.range = 3f;
+            glow.intensity = 1.5f;
+            StartCoroutine(PulseGlow(glow));
+
             _prompt = Instantiate(buttonPromptPrefab, transform.position + Vector3.left * 2f + Vector3.up * 0.5f, Quaternion.identity);
             _prompt.transform.SetParent(transform);
             _prompt.transform.localPosition = Vector3.left * 2f + Vector3.up * 0.5f;
             _prompt.Initialization();
             _prompt.SetText("F");
+        }
+
+        private IEnumerator PulseGlow(Light glow)
+        {
+            float baseIntensity = glow.intensity;
+            while (true)
+            {
+                glow.intensity = baseIntensity + Mathf.Sin(Time.time * 3f) * 0.5f;
+                yield return null;
+            }
         }
 
         private void OnDestroy()

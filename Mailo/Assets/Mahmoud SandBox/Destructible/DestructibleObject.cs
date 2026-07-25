@@ -106,6 +106,11 @@ namespace MailoGame
             go.transform.position = position;
             go.transform.localScale = Vector3.one * 0.3f;
             go.AddComponent<Rigidbody>();
+            var mat = new Material(go.GetComponent<Renderer>().sharedMaterial);
+            mat.color = new Color(1f, 0.75f, 0.1f);
+            mat.EnableKeyword("_EMISSION");
+            mat.SetColor("_EmissionColor", new Color(1f, 0.75f, 0.1f) * 1.5f);
+            go.GetComponent<Renderer>().material = mat;
             return go;
         }
     }
