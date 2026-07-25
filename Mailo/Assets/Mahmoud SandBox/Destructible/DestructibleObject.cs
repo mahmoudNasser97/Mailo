@@ -20,8 +20,18 @@ namespace MailoGame
 
         private void Start()
         {
-            if (buttonPromptPrefab == null) { Debug.LogError("[DestructibleObject] buttonPromptPrefab not assigned.", this); return; }
-            if (rayfireRigid == null) { Debug.LogError("[DestructibleObject] rayfireRigid not assigned.", this); return; }
+            if (buttonPromptPrefab == null)
+            {
+                Debug.LogError("[DestructibleObject] buttonPromptPrefab not assigned.", this);
+                enabled = false;
+                return;
+            }
+            if (rayfireRigid == null)
+            {
+                Debug.LogError("[DestructibleObject] rayfireRigid not assigned.", this);
+                enabled = false;
+                return;
+            }
             _prompt = Instantiate(buttonPromptPrefab, transform.position + Vector3.up * 1.5f, Quaternion.identity);
             _prompt.Initialization();
             _prompt.SetText("Press T to break");
@@ -38,6 +48,7 @@ namespace MailoGame
 
         private void OnTriggerEnter(Collider other)
         {
+            if (_prompt == null) return;
             if (!other.CompareTag("Player")) return;
             _playerInRange = true;
             _playerAnimator = other.transform.root.GetComponentInChildren<Animator>();
@@ -47,6 +58,7 @@ namespace MailoGame
 
         private void OnTriggerExit(Collider other)
         {
+            if (_prompt == null) return;
             if (!other.CompareTag("Player")) return;
             _playerInRange = false;
             _prompt.Hide();
