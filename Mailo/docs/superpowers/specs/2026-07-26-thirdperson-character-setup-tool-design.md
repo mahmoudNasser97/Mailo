@@ -44,16 +44,17 @@ A Unity Editor tool that takes any humanoid model (Animation Type: Humanoid) alr
 │
 └── Character Controller       Tag: Player, Layer: 8
     │  CharacterController (Unity built-in)
-    │  PhysicsCharacterController
+    │  Rigidbody
+    │  CapsuleCollider
+    │  CharacterPuppet (RootMotion.Demos)
+    │  UserControlThirdPerson (RootMotion.Demos)
     │  GrappleController
     │  ObjectGrabController
     │  PlayerHitReaction
-    │  PuppetMover
-    │  PuppetRagdollController
     │
     └── Animation Controller   Tag: Player, Layer: 8
         │  Animator
-        │  TopDownEngineAnimationController
+        │  CharacterAnimationThirdPerson (RootMotion.Demos)
         │
         └── [Input model]      moved here by the tool
 ```
@@ -148,12 +149,13 @@ Create a `HoldPoint` child GameObject under `Character Controller` at local posi
 
 Add to `Character Controller` GameObject:
 - `CharacterController`: height=2, radius=0.5, center=(0,1,0), slopeLimit=45, stepOffset=0.3
-- `PhysicsCharacterController`
+- `Rigidbody`: isKinematic=true (animated target has kinematic Rigidbody for trigger events)
+- `CapsuleCollider`: height=2, radius=0.5, center=(0,1,0), isTrigger=false
+- `CharacterPuppet` (RootMotion.Demos)
+- `UserControlThirdPerson` (RootMotion.Demos)
 - `GrappleController`
 - `ObjectGrabController`
 - `PlayerHitReaction`
-- `PuppetMover`
-- `PuppetRagdollController`
 
 ### Step 8: Set Up Animation Controller Scripts
 - Duplicate `Assets/Mahmoud SandBox/Models/ThirdPersonPuppet (1).prefab`'s Animator Controller asset
@@ -163,7 +165,7 @@ Add to `Character Controller` GameObject:
   - `avatar` = input model's humanoid avatar
   - `applyRootMotion` = true
   - `animatePhysics` = true
-- Add `TopDownEngineAnimationController`
+- Add `CharacterAnimationThirdPerson` (RootMotion.Demos)
 
 ### Step 9: Set Up Character Camera
 Add to `Character Camera` GameObject:
@@ -185,15 +187,13 @@ Add to `Character Camera` GameObject:
 | `CameraController` | `_aimOffset` | (5, 2, 0) |
 | `CameraController` | `_aimDistance` | 1.67 |
 | `CameraController` | `_aimFOV` | 50 |
-| `PhysicsCharacterController` | `characterAnimation` | `TopDownEngineAnimationController` |
+| `CharacterPuppet` | `characterAnimation` | `CharacterAnimationThirdPerson` on Animation Controller |
+| `CharacterPuppet` | `userControl` | `UserControlThirdPerson` on Character Controller |
+| `CharacterAnimationThirdPerson` | `characterController` | `CharacterPuppet` on Character Controller |
 | `GrappleController` | `_animator` | `Animator` on Animation Controller |
 | `GrappleController` | `_ropeOrigin` | `HoldPoint` Transform |
 | `ObjectGrabController` | `_animator` | `Animator` on Animation Controller |
 | `ObjectGrabController` | `_holdPoint` | `HoldPoint` Transform |
-| `PuppetMover` | PuppetMaster ref | `PuppetMaster` component |
-| `PuppetRagdollController` | `pm` | `PuppetMaster` component |
-| `PuppetRagdollController` | body Rigidbodies | all 15 ragdoll bone Rigidbodies |
-| `TopDownEngineAnimationController` | `characterController` | `PhysicsCharacterController` |
 | `PuppetMaster` | `targetRoot` | Animation Controller skeleton root |
 
 ### Step 11: Set Physics Layer Collision
