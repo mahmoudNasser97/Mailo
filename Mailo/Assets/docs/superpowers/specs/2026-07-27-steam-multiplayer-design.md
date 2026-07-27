@@ -563,26 +563,7 @@ Only the host initiates scene transitions via FishNet scene management.
 
 ## 19. Network Message Classification
 
-| Message | Direction | Delivery |
-|---|---|---|
-| InputPayload (move/aim) | Client → Host | Unreliable |
-| InputPayload (grab/throw/grapple edge) | Client → Host | Reliable |
-| PlayerStateSnapshot | Host → Clients | Unreliable sequenced |
-| PlayerStateTransition | Host → Clients | Reliable |
-| RagdollSnapshot (PhysicsCharacterController) | Host → Clients | Unreliable sequenced |
-| RagdollSnapshot (PuppetRagdollController) | Host → Clients | Unreliable sequenced |
-| NPCStateSnapshot | Host → Clients | Unreliable sequenced |
-| NPCStateTransition | Host → Clients | Reliable |
-| CmdRequestGrab | Client → Host | Reliable |
-| RpcGrabConfirmed/Denied | Host → Clients | Reliable |
-| CmdRequestThrow | Client → Host | Reliable |
-| CmdRequestDemolish | Client → Host | Reliable |
-| RpcDemolishConfirmed | Host → All clients | Reliable |
-| VoicePacket | Client → Other clients | Unreliable sequenced (Channel 1) |
-| VoiceTalkingIndicator toggle | Client → All clients | Reliable |
-| Auth ticket | Client → Host | Reliable |
-| MigrationCheckpoint | Host → All clients | Reliable fragmented |
-| Migration control event | Host/Clients | Reliable |
+See section 26 for the full updated table including chat messages.
 
 ---
 
@@ -615,15 +596,289 @@ Co-op only — no full anti-cheat needed. Required protections:
 
 ---
 
-## 22. Out of Scope (This Phase)
+## 22. Public Matchmaking (Steam Lobby Browser)
+
+Public matchmaking uses Steam's built-in lobby browser. No backend required.
+
+### Lobby types (host selects before creating):
+- **Friends-only** — only Steam friends see the lobby (existing design)
+- **Invite-only** — hidden, join by invite only (existing design)
+- **Public** — visible in Steam lobby browser to anyone playing the game
+
+### Lobby browser flow:
+```
+Client opens "Find Game" panel
+→ SteamMatchmaking.RequestLobbyList() with filters
+→ Filters: gameMode, maxPlayers=4, joinable=true, buildVersion matches
+→ Results returned as list of SteamLobby objects
+→ UI shows each lobby: host name, player count (2/4), map name
+→ Client clicks Join → follows standard client join flow (section 7)
+```
+
+### New lobby metadata keys added for browser:
+```
+gameMode        (string: "coop")
+mapName         (string)
+isPublic        (bool)
+```
+
+### New scripts:
+- `LobbBrowserPanel.cs` — UI panel showing list of public lobbies, refresh button, join button
+- `LobbyListEntry.cs` — single row in the lobby browser list
+
+### Filter rules:
+- Only show lobbies with `buildVersion` matching the local client
+- Only show lobbies where `joinable=true` and `currentPlayers < 4`
+- Sort by player count descending (fuller lobbies first)
+
+---
+
+## 23. Server-Side Validation (Anti-Cheat)
+
+All game-changing actions are validated on the host before executing. Clients cannot directly set authoritative state.
+
+### Validated actions and their checks:
+
+| Action | Host checks |
+|---|---|
+| Grab request | Distance ≤ pickupRange, object exists and not held, player state = Balanced |
+| Throw request | Player is holding the object, velocity magnitude ≤ maxThrowSpeed (clamp if over) |
+| Demolish request | Distance ≤ interactRange, object not already demolished |
+| Grapple fire | Player state = Balanced, grapple not already active |
+| Hit (TakeHit) | Server-only, ignored from clients |
+| State transitions | Only host drives CharacterPhysicsState and PuppetPhysicsState changes |
+| NPC targeting | Only host runs FindNearestPlayer(), clients receive result |
+
+### Rate limiting:
+- Grab requests: max 2 per second per client
+- Throw requests: max 2 per second per client
+- Demolish requests: max 1 per second per client
+- Any RPC exceeding rate limit: log warning, ignore silently (do not disconnect)
+
+### Duplicate protection:
+- Host tracks last-processed `CommandSequence` per client per action type
+- Duplicate sequence number → silently ignored
+
+### Note on listen-server trust:
+The host player can still manipulate their own game state. This is accepted for co-op. This is not competitive anti-cheat — it protects against accidental bugs and network exploits, not a malicious host.
+
+---
+
+## 24. In-Session Text Chat
+
+Text chat between the 4 players in the current game session. Sent through FishNet. No backend required.
+
+### ChatMessage struct:
+```csharp
+public struct ChatMessage
+{
+    public ulong  senderSteamId;
+    public string senderDisplayName;
+    public string text;
+    public long   timestamp;          // Unix ms
+    public ChatChannel channel;       // Session or Global
+}
+
+public enum ChatChannel { Session, Global }
+```
+
+### Flow:
+```
+Local player types in chat input field, presses Enter
+→ SessionChatManager.SendMessage(text)
+→ Validates: text not empty, length ≤ 256 chars, rate ≤ 2 messages/5 seconds
+→ Sends ServerRpc CmdSendChat(text) to host (reliable)
+→ Host sanitizes text (strip HTML/rich text tags)
+→ Host broadcasts ObserversRpc RpcReceiveChat(ChatMessage) to all clients
+→ All clients: add message to ChatPanel UI
+```
+
+### ChatPanel UI:
+- Scrollable message log (last 100 messages kept in memory)
+- Input field at bottom, toggle with Enter or dedicated key (e.g., T)
+- Shows sender Steam display name + message text
+- Chat window fades out after 8 seconds of inactivity, reappears on new message or input focus
+- Cannot type while chat input is focused AND block game input simultaneously (unfocus game input when chat is open)
+
+### New scripts:
+- `SessionChatManager.cs` — NetworkBehaviour, handles send/receive RPCs for session chat
+- `ChatPanel.cs` — UI component, displays messages, manages input field
+- `ChatMessage.cs` — shared struct (used by both session and global chat)
+
+---
+
+## 25. Global Text Chat (Cloudflare Backend)
+
+Cross-session global chat visible to all online players regardless of which session they are in. Uses Cloudflare Workers + Durable Objects with WebSockets.
+
+### Architecture:
+```
+Unity Client (WebSocket)
+  → Cloudflare Worker (auth + routing)
+       → Durable Object: GlobalChatRoom
+            → Broadcasts to all connected WebSocket clients
+```
+
+### Cloudflare backend components:
+- **Worker** (`chat-worker`): handles WebSocket upgrade, validates Steam auth token, routes to Durable Object
+- **Durable Object** (`GlobalChatRoom`): maintains list of connected WebSocket sessions, broadcasts messages, stores last 50 messages for late joiners
+
+### Auth flow:
+```
+Client connects to global chat
+→ Unity: SteamUser.GetAuthSessionTicket() → get ticket bytes
+→ Unity: WebSocket connect to wss://chat.yourdomain.workers.dev
+→ Send JSON: { "type": "auth", "steamId": "...", "ticket": "base64..." }
+→ Worker: validate ticket with Steam Web API (/ISteamUserAuth/AuthenticateUserTicket)
+→ If valid: Worker upgrades to Durable Object WebSocket session
+→ Durable Object sends last 50 messages to new joiner
+```
+
+### Message format (JSON over WebSocket):
+```json
+{
+  "type": "chat",
+  "senderSteamId": "76561198000000000",
+  "senderName": "PlayerName",
+  "text": "Hello world",
+  "timestamp": 1753574400000,
+  "channel": "global"
+}
+```
+
+### Unity-side global chat:
+- `GlobalChatClient.cs` — manages WebSocket lifecycle (connect on game start, reconnect on drop, disconnect on quit)
+- Uses `System.Net.WebSockets.ClientWebSocket` (built into .NET, no extra package needed)
+- Runs receive loop on background thread, marshals messages to main thread via `ConcurrentQueue`
+- On receive: add to `ChatPanel` UI with `[Global]` prefix
+
+### Rate limiting (enforced in Durable Object):
+- Max 2 messages per 5 seconds per Steam ID
+- Max message length: 256 characters
+- Profanity/spam filtering: optional, can add later
+
+### New scripts:
+- `GlobalChatClient.cs` — WebSocket client, connects to Cloudflare, sends/receives global messages
+- `GlobalChatMessage.cs` — JSON serialization model
+
+### Cloudflare files (separate repository or `cloudflare/` folder in project root):
+- `chat-worker/index.ts` — Worker entry point, WebSocket upgrade, Steam auth validation
+- `chat-worker/GlobalChatRoom.ts` — Durable Object, connection management, broadcast, message history
+
+### ChatPanel shared UI:
+The same `ChatPanel.cs` handles both session and global messages. A tab switcher (Session / Global) at the top of the panel switches which channel messages are shown from and which channel new messages are sent to.
+
+---
+
+## 26. Network Message Classification (Updated)
+
+| Message | Direction | Delivery |
+|---|---|---|
+| InputPayload (move/aim) | Client → Host | Unreliable |
+| InputPayload (grab/throw/grapple edge) | Client → Host | Reliable |
+| PlayerStateSnapshot | Host → Clients | Unreliable sequenced |
+| PlayerStateTransition | Host → Clients | Reliable |
+| RagdollSnapshot (PhysicsCharacterController) | Host → Clients | Unreliable sequenced |
+| RagdollSnapshot (PuppetRagdollController) | Host → Clients | Unreliable sequenced |
+| NPCStateSnapshot | Host → Clients | Unreliable sequenced |
+| NPCStateTransition | Host → Clients | Reliable |
+| CmdRequestGrab | Client → Host | Reliable |
+| RpcGrabConfirmed/Denied | Host → Clients | Reliable |
+| CmdRequestThrow | Client → Host | Reliable |
+| CmdRequestDemolish | Client → Host | Reliable |
+| RpcDemolishConfirmed | Host → All clients | Reliable |
+| VoicePacket | Client → Other clients | Unreliable sequenced (Channel 1) |
+| VoiceTalkingIndicator toggle | Client → All clients | Reliable |
+| Auth ticket | Client → Host | Reliable |
+| MigrationCheckpoint | Host → All clients | Reliable fragmented |
+| Migration control event | Host/Clients | Reliable |
+| CmdSendChat (session) | Client → Host | Reliable |
+| RpcReceiveChat (session) | Host → All clients | Reliable |
+| GlobalChat message | Client ↔ Cloudflare WebSocket | WebSocket (JSON) |
+
+---
+
+## 27. Updated New Script Structure
+
+```
+Assets/Game/Multiplayer/
+├── Bootstrap/
+│   ├── SteamBootstrap.cs
+│   ├── NetworkBootstrapper.cs
+│   └── BuildVersionManager.cs
+├── Steam/
+│   ├── SteamIdentityManager.cs
+│   ├── SteamLobbyManager.cs
+│   ├── SteamAuthManager.cs
+│   └── SteamFriendsManager.cs
+├── Players/
+│   ├── NetworkedPlayer.cs
+│   ├── PlayerInputReplicator.cs
+│   ├── CharacterNetSync.cs
+│   ├── RagdollNetSync.cs
+│   └── PuppetNetSync.cs
+├── NPC/
+│   ├── NPCServerAuthority.cs
+│   └── NPCStateSync.cs
+├── World/
+│   ├── NetworkedPickup.cs
+│   ├── NetworkedGrapple.cs
+│   └── NetworkedDestructible.cs
+├── Voice/
+│   ├── SteamVoiceCapture.cs
+│   ├── NetworkVoiceSender.cs
+│   ├── NetworkVoiceReceiver.cs
+│   ├── VoicePlaybackSource.cs
+│   └── VoiceTalkingIndicator.cs
+├── Chat/
+│   ├── SessionChatManager.cs
+│   ├── GlobalChatClient.cs
+│   ├── ChatPanel.cs
+│   ├── ChatMessage.cs
+│   └── GlobalChatMessage.cs
+├── Matchmaking/
+│   ├── LobbyBrowserPanel.cs
+│   └── LobbyListEntry.cs
+└── Migration/
+    ├── HostMigrationManager.cs
+    └── MigrationCheckpoint.cs
+
+cloudflare/
+├── chat-worker/
+│   ├── index.ts
+│   └── GlobalChatRoom.ts
+└── wrangler.toml
+```
+
+---
+
+## 28. Updated Phase Order
+
+| Phase | What gets built | Exit criteria |
+|---|---|---|
+| 0 | Packages + Steam startup + two clients connecting | Two Steam accounts connect, exchange test messages |
+| 1 | Steam identity, lobby (friends-only + invite-only + public), lobby browser | 4 players in one lobby, names visible, public lobby appears in browser |
+| 2 | FishNet session, auth, player spawning, server-side validation hooks | 4 players in gameplay scene, invalid RPCs rejected |
+| 3 | Input model + player movement sync + prediction | Movement responsive at 150ms simulated latency |
+| 4 | Both ragdoll systems synced | Knockdown/get-up correct on all clients |
+| 5 | NPC sync (Brain + all sub-components) | 8 NPCs active, AI only on host |
+| 6 | Pickup/grab/throw sync + grapple sync + RayFire sync | No double-ownership, demolition seen by all |
+| 7 | Steam voice (push-to-talk, 3D, mute) | 4 players speak simultaneously, no gameplay impact |
+| 8 | In-session text chat | All 4 players send/receive session messages |
+| 9 | Global chat (Cloudflare backend) | Players in different sessions see same global messages |
+| 10 | Host migration + reconnect + hardening | Forced host disconnect recovers in < 10s |
+
+---
+
+## 29. Out of Scope (This Phase)
 
 - Dedicated servers
-- Public matchmaking
-- Anti-cheat
+- Skill-based matchmaking (ELO/rating)
+- VAC / EAC anti-cheat
 - Voice activity detection
 - Cross-platform
 - More than 4 players
 - PvP
-- Global text chat
+- Friends chat (Steam overlay handles this)
 - Steam Workshop
 - Steam Inventory
