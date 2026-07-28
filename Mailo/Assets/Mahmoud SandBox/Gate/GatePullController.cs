@@ -18,7 +18,7 @@ public class GatePullController : MonoBehaviour
     [SerializeField] string   _throwState      = "ThrowRope";
     [SerializeField] string   _pullIdleState   = "PullIdle";
     [SerializeField] string   _pullActionState = "PullAction";
-    [SerializeField] string   _locomotionState = "Locomotion";
+    [SerializeField] string   _locomotionState = "Grounded Directional";
     [SerializeField] int      _animatorLayer   = 0;
 
     enum State { Idle, Throwing, Pulling }
