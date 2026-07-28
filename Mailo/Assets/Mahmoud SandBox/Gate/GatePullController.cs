@@ -1,7 +1,6 @@
 using System.Collections;
 using UnityEngine;
 
-[RequireComponent(typeof(CharacterController))]
 public class GatePullController : MonoBehaviour
 {
     [Header("Detection")]
@@ -31,7 +30,9 @@ public class GatePullController : MonoBehaviour
 
     void Awake()
     {
-        _cc = GetComponent<CharacterController>();
+        _cc = GetComponent<CharacterController>()
+           ?? GetComponentInChildren<CharacterController>()
+           ?? GetComponentInParent<CharacterController>();
         if (_animator == null)
             _animator = GetComponentInChildren<Animator>()
                      ?? GetComponentInParent<Animator>();
@@ -131,7 +132,8 @@ public class GatePullController : MonoBehaviour
             Vector3 away = transform.position - _gate.transform.position;
             away.y = 0f;
             away   = away.sqrMagnitude > 0f ? away.normalized : -transform.forward;
-            _cc.Move(away * _stepBackDistance);
+            if (_cc != null)
+                _cc.Move(away * _stepBackDistance);
         }
     }
 
