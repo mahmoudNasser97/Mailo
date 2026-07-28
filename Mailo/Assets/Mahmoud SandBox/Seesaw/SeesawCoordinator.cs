@@ -22,6 +22,7 @@ public class SeesawCoordinator : MonoBehaviour
 
     public void NotifyJump(SeesawParticipant jumper)
     {
+        Debug.Log($"[SeesawCoordinator] NotifyJump — jumper={jumper.name} cooldown={_onCooldown} sideBCount={_sideB.Occupants.Count}");
         if (_onCooldown) return;
         if (_sideB.Occupants.Count == 0) return;
 

@@ -41,6 +41,7 @@ public class SeesawParticipant : MonoBehaviour
 
     public void ApplyLaunch(Vector3 impulse)
     {
+        Debug.Log($"[SeesawParticipant:{name}] ApplyLaunch — impulse={impulse} physicsCtrl={_physicsCtrl != null} puppetCtrl={_puppetCtrl != null} rb={Rb?.name ?? "NULL"}");
         if (_physicsCtrl != null)
         {
             StartCoroutine(LaunchPlayer(impulse));
@@ -56,6 +57,8 @@ public class SeesawParticipant : MonoBehaviour
         // Generic fallback
         if (Rb != null)
             Rb.AddForce(impulse, ForceMode.Impulse);
+        else
+            Debug.LogWarning($"[SeesawParticipant:{name}] ApplyLaunch — no Rigidbody, physicsCtrl, or puppetCtrl found! Nothing will happen.");
     }
 
     IEnumerator LaunchNPC(Vector3 impulse)
