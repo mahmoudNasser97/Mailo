@@ -10,22 +10,32 @@ public class GatePullController : MonoBehaviour
     [Header("Rope Visual")]
     [SerializeField] Transform _handBone;
     [SerializeField] float     _ropeWidth         = 0.05f;
-    [SerializeField] Color     _ropeColor          = Color.gray;
-    [SerializeField] float     _ropeThrowDuration  = 0.4f;
+    [SerializeField] Color     _ropeColor         = Color.gray;
+    [SerializeField] float     _ropeThrowDuration = 0.4f;
+
+    [Header("Pull")]
+    [SerializeField] float _stepBackDistance = 0.15f;
 
     [Header("Animation")]
     [SerializeField] Animator _animator;
-    [SerializeField] string   _throwAnimTrigger = "ThrowRope";
-    [SerializeField] string   _pullingAnimBool  = "Pulling";
+    [SerializeField] string   _throwAnimTrigger  = "ThrowRope";
+    [SerializeField] string   _throwAnimState    = "ThrowRope";
+    [SerializeField] string   _pullingAnimBool   = "Pulling";
+    [SerializeField] string   _pullActionTrigger = "PullAction";
 
     enum State { Idle, Throwing, Pulling }
 
-    LineRenderer _rope;
+    CharacterController _cc;
+    LineRenderer        _rope;
     PullableGate        _gate;
     State               _state = State.Idle;
 
     void Awake()
     {
+        _cc = GetComponentInChildren<CharacterController>()
+           ?? GetComponent<CharacterController>()
+           ?? GetComponentInParent<CharacterController>();
+
         if (_animator == null)
             _animator = GetComponentInChildren<Animator>()
                      ?? GetComponentInParent<Animator>();
@@ -77,7 +87,6 @@ public class GatePullController : MonoBehaviour
 
     void UpdateThrowing()
     {
-        // Cancel throw if player walks away mid-throw
         if (_gate == null) return;
         float dist = Vector3.Distance(transform.position, _gate.transform.position);
         if (dist > _interactionRadius * 1.5f)
@@ -86,6 +95,7 @@ public class GatePullController : MonoBehaviour
 
     IEnumerator ThrowRope()
     {
+        // Phase 1: extend rope visually
         float elapsed = 0f;
         while (elapsed < _ropeThrowDuration)
         {
@@ -99,6 +109,32 @@ public class GatePullController : MonoBehaviour
         }
 
         if (_gate == null) yield break;
+
+        // Phase 2: wait for throw animation to finish before entering pull state
+        if (_animator != null)
+        {
+            bool enteredState = false;
+            float timeout = 2f;
+            float waited  = 0f;
+            while (waited < timeout)
+            {
+                var info = _animator.GetCurrentAnimatorStateInfo(0);
+                if (info.IsName(_throwAnimState))
+                {
+                    enteredState = true;
+                    if (info.normalizedTime >= 0.9f) break;
+                }
+                else if (enteredState)
+                {
+                    break; // animator already transitioned out
+                }
+                waited += Time.deltaTime;
+                yield return null;
+            }
+        }
+
+        if (_gate == null) yield break;
+
         _gate.StartPull();
         _state = State.Pulling;
         _animator?.SetBool(_pullingAnimBool, true);
@@ -106,6 +142,15 @@ public class GatePullController : MonoBehaviour
 
     void UpdatePulling()
     {
+        // Any movement input cancels the pull
+        float h = Input.GetAxisRaw("Horizontal");
+        float v = Input.GetAxisRaw("Vertical");
+        if (Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f)
+        {
+            ExitPull();
+            return;
+        }
+
         float dist = Vector3.Distance(transform.position, _gate.transform.position);
         if (dist > _pullBreakDistance || _gate.IsFullyOpen)
         {
@@ -118,7 +163,18 @@ public class GatePullController : MonoBehaviour
         _rope.SetPosition(1, _gate.MarkerTransform.position);
 
         if (Input.GetKeyDown(KeyCode.X))
+        {
             _gate.RegisterPress();
+            _animator?.SetTrigger(_pullActionTrigger);
+
+            if (_cc != null)
+            {
+                Vector3 away = transform.position - _gate.transform.position;
+                away.y = 0f;
+                away   = away.sqrMagnitude > 0f ? away.normalized : -transform.forward;
+                _cc.Move(away * _stepBackDistance);
+            }
+        }
     }
 
     void ExitPull()
