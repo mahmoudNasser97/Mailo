@@ -13,12 +13,16 @@ public class GateNeonMarker : MonoBehaviour
 
     Vector3 _baseScale;
     bool    _progressMode;
+    Material _mat;
 
     void Awake()
     {
         _baseScale = transform.localScale;
         if (_renderer != null)
+        {
             _renderer.material.EnableKeyword("_EMISSION");
+            _mat = _renderer.material;
+        }
     }
 
     void Update()
@@ -26,7 +30,7 @@ public class GateNeonMarker : MonoBehaviour
         if (_renderer == null || _progressMode) return;
         float t         = (Mathf.Sin(Time.time * _idlePulseSpeed * Mathf.PI * 2f) + 1f) * 0.5f;
         float intensity = Mathf.Lerp(_idlePulseMin, _idlePulseMax, t);
-        _renderer.material.SetColor(_emissionPropId, _emissionColor * intensity);
+        _mat.SetColor(_emissionPropId, _emissionColor * intensity);
     }
 
     public void SetProgress(float t)
@@ -37,7 +41,7 @@ public class GateNeonMarker : MonoBehaviour
         if (_renderer != null)
         {
             float intensity = Mathf.Lerp(_idlePulseMin, _idlePulseMax * 2f, t);
-            _renderer.material.SetColor(_emissionPropId, _emissionColor * intensity);
+            _mat.SetColor(_emissionPropId, _emissionColor * intensity);
         }
     }
 }
