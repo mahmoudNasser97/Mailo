@@ -32,7 +32,6 @@ public class SeesawSide : MonoBehaviour
     void OnTriggerEnter(Collider other)
     {
         var p = FindParticipant(other);
-        Debug.Log($"[SeesawSide:{role}] TriggerEnter — collider={other.name} participant={p?.name ?? "NONE"}");
         if (p != null && !_occupants.Contains(p))
             _occupants.Add(p);
     }
@@ -40,7 +39,6 @@ public class SeesawSide : MonoBehaviour
     void OnTriggerExit(Collider other)
     {
         var p = FindParticipant(other);
-        Debug.Log($"[SeesawSide:{role}] TriggerExit — collider={other.name} participant={p?.name ?? "NONE"} velocityY={p?.VelocityY:F2}");
         if (p == null) return;
 
         _occupants.Remove(p);
@@ -49,8 +47,6 @@ public class SeesawSide : MonoBehaviour
         {
             if (p.gameObject.activeInHierarchy && p.VelocityY > _jumpVelocityThreshold)
                 _coordinator.NotifyJump(p);
-            else
-                Debug.Log($"[SeesawSide:Input] Jump NOT detected — active={p.gameObject.activeInHierarchy} velocityY={p.VelocityY:F2} threshold={_jumpVelocityThreshold}");
         }
     }
 }

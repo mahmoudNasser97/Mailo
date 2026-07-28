@@ -23,7 +23,6 @@ public class SeesawCoordinator : MonoBehaviour
 
     public void NotifyJump(SeesawParticipant jumper)
     {
-        Debug.Log($"[SeesawCoordinator] NotifyJump — jumper={jumper.name} cooldown={_onCooldown} sideBCount={_sideB.Occupants.Count}");
         if (_onCooldown) return;
         if (_sideB.Occupants.Count == 0) return;
 
@@ -48,8 +47,6 @@ public class SeesawCoordinator : MonoBehaviour
 
         Vector3 launchDir    = (Vector3.up + awayDir * _horizontalBias).normalized;
         Vector3 launchVector = launchDir * (weightRatio * _baseForce);
-
-        Debug.Log($"[SeesawCoordinator] sideA={sideAWeight}kg sideB={sideBWeight}kg ratio={weightRatio:F2} speed={launchVector.magnitude:F1}m/s");
 
         foreach (var target in _sideB.Occupants)
             target.ApplyLaunch(launchVector);
