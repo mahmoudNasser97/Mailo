@@ -26,7 +26,8 @@ public class SeesawParticipant : MonoBehaviour
     {
         if (_physicsCtrl != null)
         {
-            Rb.AddForce(impulse, ForceMode.Impulse);
+            if (Rb != null)
+                Rb.AddForce(impulse, ForceMode.Impulse);
             _physicsCtrl.ForceRagdoll();
             return;
         }
