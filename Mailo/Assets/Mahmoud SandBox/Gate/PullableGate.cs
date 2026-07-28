@@ -23,8 +23,10 @@ public class PullableGate : MonoBehaviour
     {
         if (_isLocked) return;
 
+        float t = _pressesRequired > 0 ? _currentPresses / (float)_pressesRequired : 0f;
+
         float targetAngle = _isPulling
-            ? (_currentPresses / (float)_pressesRequired) * _openAngle
+            ? t * _openAngle
             : 0f;
 
         _currentAngle = _isPulling
@@ -33,8 +35,7 @@ public class PullableGate : MonoBehaviour
 
         transform.localRotation = Quaternion.Euler(_currentAngle, 0f, 0f);
 
-        float progress = _pressesRequired > 0 ? _currentPresses / (float)_pressesRequired : 0f;
-        _marker?.SetProgress(progress);
+        _marker?.SetProgress(t);
     }
 
     public void StartPull()
