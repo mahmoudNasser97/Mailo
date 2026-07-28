@@ -20,12 +20,16 @@ public class GatePullController : MonoBehaviour
     [SerializeField] string   _pullActionState = "PullAction";
     [SerializeField] string   _locomotionState = "Grounded Directional";
     [SerializeField] int      _animatorLayer   = 0;
+    [SerializeField] float   _maxAnimSpeed    = 3f;
+    [SerializeField] float   _animSpeedDecay  = 4f;
 
     enum State { Idle, Throwing, Pulling }
 
     LineRenderer _rope;
     PullableGate _gate;
-    State        _state = State.Idle;
+    State        _state         = State.Idle;
+    float        _lastPressTime = -99f;
+    float        _animSpeed     = 1f;
 
     void Awake()
     {
@@ -124,8 +128,14 @@ public class GatePullController : MonoBehaviour
         _rope.SetPosition(0, HandPosition());
         _rope.SetPosition(1, _gate.MarkerTransform.position);
 
+        _animSpeed = Mathf.MoveTowards(_animSpeed, 1f, _animSpeedDecay * Time.deltaTime);
+        if (_animator != null) _animator.speed = _animSpeed;
+
         if (Input.GetKeyDown(KeyCode.X))
         {
+            float interval  = Mathf.Max(Time.time - _lastPressTime, 0.05f);
+            _lastPressTime  = Time.time;
+            _animSpeed      = Mathf.Clamp(0.25f / interval, 1f, _maxAnimSpeed);
             _gate.RegisterPress();
             _animator?.CrossFade(_pullActionState, 0.05f, _animatorLayer);
         }
@@ -138,7 +148,9 @@ public class GatePullController : MonoBehaviour
             _gate.StopPull();
         _gate         = null;
         _state        = State.Idle;
+        _animSpeed    = 1f;
         _rope.enabled = false;
+        if (_animator != null) _animator.speed = 1f;
         _animator?.CrossFade(_locomotionState, 0.2f, _animatorLayer);
     }
 
