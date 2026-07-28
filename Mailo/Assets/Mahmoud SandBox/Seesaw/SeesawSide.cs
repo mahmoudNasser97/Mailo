@@ -34,7 +34,7 @@ public class SeesawSide : MonoBehaviour
 
         if (role == SeesawRole.Input && _coordinator != null)
         {
-            if (p.Rb != null && p.Rb.linearVelocity.y > _jumpVelocityThreshold)
+            if (p.Rb != null && p.gameObject.activeInHierarchy && p.Rb.linearVelocity.y > _jumpVelocityThreshold)
                 _coordinator.NotifyJump(p);
         }
     }
