@@ -4,17 +4,14 @@ using UnityEngine;
 public class GatePullController : MonoBehaviour
 {
     [Header("Detection")]
-    [SerializeField] float _interactionRadius  = 3f;
-    [SerializeField] float _pullBreakDistance  = 6f;  // max distance before rope breaks while pulling
+    [SerializeField] float _interactionRadius  = 5f;
+    [SerializeField] float _pullBreakDistance  = 8f;
 
     [Header("Rope Visual")]
     [SerializeField] Transform _handBone;
     [SerializeField] float     _ropeWidth         = 0.05f;
     [SerializeField] Color     _ropeColor          = Color.gray;
     [SerializeField] float     _ropeThrowDuration  = 0.4f;
-
-    [Header("Pull")]
-    [SerializeField] float _stepBackDistance = 0.15f;
 
     [Header("Animation")]
     [SerializeField] Animator _animator;
@@ -23,16 +20,12 @@ public class GatePullController : MonoBehaviour
 
     enum State { Idle, Throwing, Pulling }
 
-    CharacterController _cc;
-    LineRenderer        _rope;
+    LineRenderer _rope;
     PullableGate        _gate;
     State               _state = State.Idle;
 
     void Awake()
     {
-        _cc = GetComponent<CharacterController>()
-           ?? GetComponentInChildren<CharacterController>()
-           ?? GetComponentInParent<CharacterController>();
         if (_animator == null)
             _animator = GetComponentInChildren<Animator>()
                      ?? GetComponentInParent<Animator>();
@@ -125,16 +118,7 @@ public class GatePullController : MonoBehaviour
         _rope.SetPosition(1, _gate.MarkerTransform.position);
 
         if (Input.GetKeyDown(KeyCode.X))
-        {
             _gate.RegisterPress();
-
-            // Step back — away from gate on XZ plane
-            Vector3 away = transform.position - _gate.transform.position;
-            away.y = 0f;
-            away   = away.sqrMagnitude > 0f ? away.normalized : -transform.forward;
-            if (_cc != null)
-                _cc.Move(away * _stepBackDistance);
-        }
     }
 
     void ExitPull()
