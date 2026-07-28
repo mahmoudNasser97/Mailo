@@ -129,7 +129,13 @@ public class GatePullController : MonoBehaviour
         _rope.SetPosition(1, _gate.MarkerTransform.position);
 
         _animSpeed = Mathf.MoveTowards(_animSpeed, 1f, _animSpeedDecay * Time.deltaTime);
-        if (_animator != null) _animator.speed = _animSpeed;
+        if (_animator != null)
+        {
+            _animator.speed = _animSpeed;
+            var info = _animator.GetCurrentAnimatorStateInfo(_animatorLayer);
+            if (info.shortNameHash == Animator.StringToHash(_pullActionState) && info.normalizedTime >= 0.75f)
+                _animator.CrossFade(_pullIdleState, 0.15f, _animatorLayer);
+        }
 
         if (Input.GetKeyDown(KeyCode.X))
         {
