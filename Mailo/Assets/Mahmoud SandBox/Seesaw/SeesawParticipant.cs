@@ -56,7 +56,7 @@ public class SeesawParticipant : MonoBehaviour
 
         // Generic fallback
         if (Rb != null)
-            Rb.AddForce(impulse, ForceMode.Impulse);
+            Rb.AddForce(impulse, ForceMode.VelocityChange);
         else
             Debug.LogWarning($"[SeesawParticipant:{name}] ApplyLaunch — no Rigidbody, physicsCtrl, or puppetCtrl found! Nothing will happen.");
     }
@@ -64,7 +64,7 @@ public class SeesawParticipant : MonoBehaviour
     IEnumerator LaunchNPC(Vector3 impulse)
     {
         // Force ragdoll first (sets pm.pinWeight = 0 immediately)
-        _puppetCtrl.ReportImpact(Mathf.Max(impulse.magnitude, _puppetCtrl.knockdownThreshold + 1f));
+        _puppetCtrl.ReportImpact(_puppetCtrl.knockdownThreshold + 1f);
         // Wait one physics step for PuppetMaster to release pin
         yield return new WaitForFixedUpdate();
         // Apply force to hips so ragdoll body flies
@@ -72,7 +72,7 @@ public class SeesawParticipant : MonoBehaviour
             ? _puppetCtrl.muscleBodies[0]
             : Rb;
         if (hips != null)
-            hips.AddForce(impulse, ForceMode.Impulse);
+            hips.AddForce(impulse, ForceMode.VelocityChange);
     }
 
     IEnumerator LaunchPlayer(Vector3 impulse)
@@ -80,6 +80,6 @@ public class SeesawParticipant : MonoBehaviour
         _physicsCtrl.ForceRagdoll();
         yield return new WaitForFixedUpdate();
         if (Rb != null)
-            Rb.AddForce(impulse, ForceMode.Impulse);
+            Rb.AddForce(impulse, ForceMode.VelocityChange);
     }
 }
