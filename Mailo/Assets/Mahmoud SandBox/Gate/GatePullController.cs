@@ -13,29 +13,20 @@ public class GatePullController : MonoBehaviour
     [SerializeField] Color     _ropeColor         = Color.gray;
     [SerializeField] float     _ropeThrowDuration = 0.4f;
 
-    [Header("Pull")]
-    [SerializeField] float _stepBackDistance = 0.15f;
-
     [Header("Animation")]
     [SerializeField] Animator _animator;
     [SerializeField] string   _throwAnimTrigger  = "ThrowRope";
-    [SerializeField] string   _throwAnimState    = "ThrowRope";
     [SerializeField] string   _pullingAnimBool   = "Pulling";
     [SerializeField] string   _pullActionTrigger = "PullAction";
 
     enum State { Idle, Throwing, Pulling }
 
-    CharacterController _cc;
-    LineRenderer        _rope;
-    PullableGate        _gate;
-    State               _state = State.Idle;
+    LineRenderer _rope;
+    PullableGate _gate;
+    State        _state = State.Idle;
 
     void Awake()
     {
-        _cc = GetComponentInChildren<CharacterController>()
-           ?? GetComponent<CharacterController>()
-           ?? GetComponentInParent<CharacterController>();
-
         if (_animator == null)
             _animator = GetComponentInChildren<Animator>()
                      ?? GetComponentInParent<Animator>();
@@ -88,14 +79,15 @@ public class GatePullController : MonoBehaviour
     void UpdateThrowing()
     {
         if (_gate == null) return;
-        float dist = Vector3.Distance(transform.position, _gate.transform.position);
-        if (dist > _interactionRadius * 1.5f)
+
+        // Movement input or walking away cancels the throw
+        if (HasMovementInput() || Vector3.Distance(transform.position, _gate.transform.position) > _interactionRadius * 1.5f)
             ExitPull();
     }
 
     IEnumerator ThrowRope()
     {
-        // Phase 1: extend rope visually
+        // Extend rope visually toward the neon X over _ropeThrowDuration seconds
         float elapsed = 0f;
         while (elapsed < _ropeThrowDuration)
         {
@@ -110,31 +102,8 @@ public class GatePullController : MonoBehaviour
 
         if (_gate == null) yield break;
 
-        // Phase 2: wait for throw animation to finish before entering pull state
-        if (_animator != null)
-        {
-            bool enteredState = false;
-            float timeout = 2f;
-            float waited  = 0f;
-            while (waited < timeout)
-            {
-                var info = _animator.GetCurrentAnimatorStateInfo(0);
-                if (info.IsName(_throwAnimState))
-                {
-                    enteredState = true;
-                    if (info.normalizedTime >= 0.9f) break;
-                }
-                else if (enteredState)
-                {
-                    break; // animator already transitioned out
-                }
-                waited += Time.deltaTime;
-                yield return null;
-            }
-        }
-
-        if (_gate == null) yield break;
-
+        // Rope is now visually connected — enter pull state.
+        // The Animator handles ThrowRope → Pull Idle via "Has Exit Time" on that transition.
         _gate.StartPull();
         _state = State.Pulling;
         _animator?.SetBool(_pullingAnimBool, true);
@@ -142,10 +111,8 @@ public class GatePullController : MonoBehaviour
 
     void UpdatePulling()
     {
-        // Any movement input cancels the pull
-        float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
-        if (Mathf.Abs(h) > 0.1f || Mathf.Abs(v) > 0.1f)
+        // Movement input exits pull
+        if (HasMovementInput())
         {
             ExitPull();
             return;
@@ -166,14 +133,6 @@ public class GatePullController : MonoBehaviour
         {
             _gate.RegisterPress();
             _animator?.SetTrigger(_pullActionTrigger);
-
-            if (_cc != null)
-            {
-                Vector3 away = transform.position - _gate.transform.position;
-                away.y = 0f;
-                away   = away.sqrMagnitude > 0f ? away.normalized : -transform.forward;
-                _cc.Move(away * _stepBackDistance);
-            }
         }
     }
 
@@ -187,6 +146,10 @@ public class GatePullController : MonoBehaviour
         _rope.enabled = false;
         _animator?.SetBool(_pullingAnimBool, false);
     }
+
+    static bool HasMovementInput() =>
+        Mathf.Abs(Input.GetAxisRaw("Horizontal")) > 0.1f ||
+        Mathf.Abs(Input.GetAxisRaw("Vertical"))   > 0.1f;
 
     Vector3 HandPosition() =>
         _handBone != null ? _handBone.position : transform.position + Vector3.up * 1.2f;
