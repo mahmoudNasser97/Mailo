@@ -104,6 +104,7 @@ public class GatePullController : MonoBehaviour
             yield return null;
         }
 
+        if (_gate == null) yield break;
         _gate.StartPull();
         _state = State.Pulling;
         _animator?.SetBool(_pullingAnimBool, true);
