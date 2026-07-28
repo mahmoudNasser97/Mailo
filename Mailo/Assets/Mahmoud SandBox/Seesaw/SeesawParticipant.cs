@@ -26,9 +26,7 @@ public class SeesawParticipant : MonoBehaviour
     {
         if (_physicsCtrl != null)
         {
-            if (Rb != null)
-                Rb.AddForce(impulse, ForceMode.Impulse);
-            _physicsCtrl.ForceRagdoll();
+            StartCoroutine(LaunchPlayer(impulse));
             return;
         }
 
@@ -55,5 +53,13 @@ public class SeesawParticipant : MonoBehaviour
             : Rb;
         if (hips != null)
             hips.AddForce(impulse, ForceMode.Impulse);
+    }
+
+    IEnumerator LaunchPlayer(Vector3 impulse)
+    {
+        _physicsCtrl.ForceRagdoll();
+        yield return new WaitForFixedUpdate();
+        if (Rb != null)
+            Rb.AddForce(impulse, ForceMode.Impulse);
     }
 }
