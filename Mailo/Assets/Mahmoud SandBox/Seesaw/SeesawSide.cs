@@ -18,9 +18,20 @@ public class SeesawSide : MonoBehaviour
         _coordinator = coordinator;
     }
 
+    static SeesawParticipant FindParticipant(Collider other)
+    {
+        // First try going up (works when SeesawParticipant is on the same object or an ancestor)
+        var p = other.GetComponentInParent<SeesawParticipant>();
+        // Fallback: search from the hierarchy root downward — handles PuppetMaster ragdoll bones
+        // whose root is separate from the animated character object
+        if (p == null)
+            p = other.transform.root.GetComponentInChildren<SeesawParticipant>();
+        return p;
+    }
+
     void OnTriggerEnter(Collider other)
     {
-        var p = other.GetComponentInParent<SeesawParticipant>();
+        var p = FindParticipant(other);
         Debug.Log($"[SeesawSide:{role}] TriggerEnter — collider={other.name} participant={p?.name ?? "NONE"}");
         if (p != null && !_occupants.Contains(p))
             _occupants.Add(p);
@@ -28,7 +39,7 @@ public class SeesawSide : MonoBehaviour
 
     void OnTriggerExit(Collider other)
     {
-        var p = other.GetComponentInParent<SeesawParticipant>();
+        var p = FindParticipant(other);
         Debug.Log($"[SeesawSide:{role}] TriggerExit — collider={other.name} participant={p?.name ?? "NONE"} velocityY={p?.VelocityY:F2}");
         if (p == null) return;
 
