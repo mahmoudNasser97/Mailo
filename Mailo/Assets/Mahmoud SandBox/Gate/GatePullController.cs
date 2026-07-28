@@ -4,8 +4,8 @@ using UnityEngine;
 public class GatePullController : MonoBehaviour
 {
     [Header("Detection")]
-    [SerializeField] float _interactionRadius  = 5f;
-    [SerializeField] float _pullBreakDistance  = 8f;
+    [SerializeField] float _interactionRadius = 5f;
+    [SerializeField] float _pullBreakDistance = 8f;
 
     [Header("Rope Visual")]
     [SerializeField] Transform _handBone;
@@ -13,11 +13,13 @@ public class GatePullController : MonoBehaviour
     [SerializeField] Color     _ropeColor         = Color.gray;
     [SerializeField] float     _ropeThrowDuration = 0.4f;
 
-    [Header("Animation")]
+    [Header("Animation — exact state names in your Animator Controller")]
     [SerializeField] Animator _animator;
-    [SerializeField] string   _throwAnimTrigger  = "ThrowRope";
-    [SerializeField] string   _pullingAnimBool   = "Pulling";
-    [SerializeField] string   _pullActionTrigger = "PullAction";
+    [SerializeField] string   _throwState      = "ThrowRope";
+    [SerializeField] string   _pullIdleState   = "PullIdle";
+    [SerializeField] string   _pullActionState = "PullAction";
+    [SerializeField] string   _locomotionState = "Locomotion";
+    [SerializeField] int      _animatorLayer   = 0;
 
     enum State { Idle, Throwing, Pulling }
 
@@ -70,7 +72,7 @@ public class GatePullController : MonoBehaviour
         {
             _gate  = found;
             _state = State.Throwing;
-            _animator?.SetTrigger(_throwAnimTrigger);
+            _animator?.CrossFade(_throwState, 0.1f, _animatorLayer);
             _rope.enabled = true;
             StartCoroutine(ThrowRope());
         }
@@ -79,15 +81,12 @@ public class GatePullController : MonoBehaviour
     void UpdateThrowing()
     {
         if (_gate == null) return;
-
-        // Movement input or walking away cancels the throw
         if (HasMovementInput() || Vector3.Distance(transform.position, _gate.transform.position) > _interactionRadius * 1.5f)
             ExitPull();
     }
 
     IEnumerator ThrowRope()
     {
-        // Extend rope visually toward the neon X over _ropeThrowDuration seconds
         float elapsed = 0f;
         while (elapsed < _ropeThrowDuration)
         {
@@ -102,16 +101,13 @@ public class GatePullController : MonoBehaviour
 
         if (_gate == null) yield break;
 
-        // Rope is now visually connected — enter pull state.
-        // The Animator handles ThrowRope → Pull Idle via "Has Exit Time" on that transition.
         _gate.StartPull();
         _state = State.Pulling;
-        _animator?.SetBool(_pullingAnimBool, true);
+        _animator?.CrossFade(_pullIdleState, 0.2f, _animatorLayer);
     }
 
     void UpdatePulling()
     {
-        // Movement input exits pull
         if (HasMovementInput())
         {
             ExitPull();
@@ -125,14 +121,13 @@ public class GatePullController : MonoBehaviour
             return;
         }
 
-        // Keep rope live
         _rope.SetPosition(0, HandPosition());
         _rope.SetPosition(1, _gate.MarkerTransform.position);
 
         if (Input.GetKeyDown(KeyCode.X))
         {
             _gate.RegisterPress();
-            _animator?.SetTrigger(_pullActionTrigger);
+            _animator?.CrossFade(_pullActionState, 0.05f, _animatorLayer);
         }
     }
 
@@ -144,7 +139,7 @@ public class GatePullController : MonoBehaviour
         _gate         = null;
         _state        = State.Idle;
         _rope.enabled = false;
-        _animator?.SetBool(_pullingAnimBool, false);
+        _animator?.CrossFade(_locomotionState, 0.2f, _animatorLayer);
     }
 
     static bool HasMovementInput() =>
