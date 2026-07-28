@@ -8,12 +8,29 @@ public class SeesawParticipant : MonoBehaviour
     public float     WeightKg => _weightKg;
     public Rigidbody Rb       { get; private set; }
 
+    // Y velocity regardless of whether the character uses Rigidbody or CharacterController
+    public float VelocityY
+    {
+        get
+        {
+            if (Rb != null)         return Rb.linearVelocity.y;
+            if (_charCtrl != null)  return _charCtrl.velocity.y;
+            return 0f;
+        }
+    }
+
     PhysicsCharacterController _physicsCtrl;
     PuppetRagdollController    _puppetCtrl;
+    CharacterController        _charCtrl;
 
     void Awake()
     {
-        Rb           = GetComponent<Rigidbody>() ?? GetComponentInParent<Rigidbody>();
+        Rb           = GetComponent<Rigidbody>()
+                    ?? GetComponentInParent<Rigidbody>()
+                    ?? GetComponentInChildren<Rigidbody>();        // ragdoll bones are children
+        _charCtrl    = GetComponent<CharacterController>()
+                    ?? GetComponentInParent<CharacterController>()
+                    ?? GetComponentInChildren<CharacterController>();
         _physicsCtrl = GetComponent<PhysicsCharacterController>()
                     ?? GetComponentInParent<PhysicsCharacterController>()
                     ?? GetComponentInChildren<PhysicsCharacterController>();
