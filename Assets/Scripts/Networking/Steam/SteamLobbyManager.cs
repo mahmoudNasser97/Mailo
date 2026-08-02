@@ -120,7 +120,8 @@ namespace Mailo.Networking.Steam
             for (int i = 0; i < count; i++)
             {
                 CSteamID memberId = SteamMatchmaking.GetLobbyMemberByIndex(manager._currentLobbyId, i);
-                members.Add(new SteamLobbyMemberInfo(memberId, SteamIdentityManager.GetDisplayName(memberId)));
+                string assignedCharacter = SteamLobbyCharacterAssignment.GetAssignedCharacter(manager._currentLobbyId, memberId);
+                members.Add(new SteamLobbyMemberInfo(memberId, SteamIdentityManager.GetDisplayName(memberId), assignedCharacter));
             }
 
             return members;
@@ -262,7 +263,10 @@ namespace Mailo.Networking.Steam
             LobbyEntered?.Invoke(success, lobbyId, kind, response);
 
             if (success)
+            {
+                SteamLobbyCharacterAssignment.RecomputeAndPublish(lobbyId);
                 LobbyMembersChanged?.Invoke(lobbyId);
+            }
         }
 
         private void OnLobbyChatUpdate(LobbyChatUpdate_t callback)
@@ -286,6 +290,7 @@ namespace Mailo.Networking.Steam
                 return;
             }
 
+            SteamLobbyCharacterAssignment.RecomputeAndPublish(_currentLobbyId);
             LobbyMembersChanged?.Invoke(_currentLobbyId);
         }
 

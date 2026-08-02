@@ -193,6 +193,66 @@ If a button looks stuck disabled with no request in flight, that's a bug
 worth reporting (not expected behavior).
 
 ================================================================================
+ STEP 3 — RANDOM CHARACTER ASSIGNMENT + START BUTTON + GAME SCENE SPAWNER
+================================================================================
+
+WHAT IT DOES
+------------
+Each of the 4 lobby slots gets randomly assigned one of 4 fixed characters
+(Bruno, Ranger, Zara, Pixel), shown next to that player's name+avatar in the
+lobby. Assignment is STABLE - once a member has a character, they keep it
+until they leave; only newly-joined members get assigned from whichever
+characters are still unused. A "Start" button is enabled ONLY when you are
+the lobby owner AND the lobby is full (4/4); clicking it loads a new "Game"
+scene and spawns one placeholder capsule per lobby member.
+
+IMPORTANT LIMITATION: Start's scene load is LOCAL ONLY for now. Clicking it
+only changes YOUR OWN screen - the other 3 players stay in the lobby scene.
+Real synced scene transition needs FishNet, not installed yet. This is
+expected for this step, not a bug.
+
+FILES
+-----
+- Assets/Scripts/Networking/Steam/SteamLobbyCharacterAssignment.cs
+  (roster, recompute/publish/read - host-only writes, mirrors the existing
+  owner-gated SteamLobbyMetadata pattern)
+- Assets/Scripts/Networking/Game/GameSceneCharacterSpawner.cs (new folder,
+  namespace Mailo.Networking.Game - reads the lobby roster and spawns
+  capsules; not Steam-specific itself, just consumes lobby data)
+
+SCENE SETUP (once)
+-------------------
+1. File > Build Settings: add Assets/Islam SandBox/Game.unity to Scenes In
+   Build (checked/enabled), alongside the existing lobby scene. Required -
+   SceneManager.LoadScene("Game") does nothing (silently logs an error) if
+   the scene isn't listed here, even inside the Editor's Play mode.
+2. In the lobby scene's Canvas, add a "Start" Button, wire it into the
+   SteamLobbyDebugProbe's new "_startButton" field.
+3. On each of the 4 SteamLobbyMemberRow instances, add a new TMP Text child
+   for the character name, wire it into the new "_characterLabel" field.
+4. In Game.unity, add an empty GameObject (e.g. "CharacterSpawner") with the
+   new "Game Scene Character Spawner" component attached. Leave
+   "_spawnPoints" unassigned to use automatic spread-out positions, or
+   create 4 child Transforms and assign them for manual placement.
+
+HOW TO TEST
+-----------
+1. Two testers join the same lobby (either path from Step 2).
+2. Both members' rows should show a character name (e.g. A="Bruno",
+   B="Ranger") - different characters, never duplicates.
+3. Have Tester A leave and rejoin (or a 3rd tester join) - confirm existing
+   members' characters do NOT change, and the new/rejoining member gets one
+   of the remaining unused characters.
+4. With 1-3 members, confirm Start is disabled for everyone, including the
+   owner.
+5. Get to exactly 4 members - Start becomes clickable ONLY for the lobby
+   owner, stays disabled for the other 3.
+6. Owner clicks Start - Game.unity loads on the owner's client only (the
+   other 3 stay in the lobby scene, expected per the limitation above). In
+   the Hierarchy, confirm 4 capsules named "Player_<name>_<character>"
+   appear, spread out and distinct.
+
+================================================================================
  TESTING WITHOUT STEAM RUNNING (applies to all steps above)
 ================================================================================
 Every manager (SteamIdentityManager, SteamLobbyManager) checks
@@ -219,3 +279,6 @@ Steam), but is expected and safe when a teammate tests without Steam open.
 - Step 2 update: Create/Join/Leave/Invite buttons now enable/disable
   automatically based on request-in-flight and in-lobby state (see
   "BUTTON STATES" section).
+- Step 3 added: random stable character assignment (Bruno/Ranger/Zara/Pixel)
+  shown per lobby member, plus a host-only "Start" button (enabled only at
+  4/4 players) that loads the Game scene and spawns placeholder capsules.

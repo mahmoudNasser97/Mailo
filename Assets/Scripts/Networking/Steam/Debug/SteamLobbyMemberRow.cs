@@ -9,6 +9,7 @@ namespace Mailo.Networking.Steam
     {
         [SerializeField] private RawImage _avatarImage;
         [SerializeField] private TMP_Text _nameLabel;
+        [SerializeField] private TMP_Text _characterLabel;
 
         public void Bind(SteamLobbyMemberInfo member)
         {
@@ -19,6 +20,17 @@ namespace Mailo.Networking.Steam
             else
             {
                 Debug.LogWarning($"[SteamLobbyMemberRow] '{name}' has no _nameLabel assigned in the Inspector.", this);
+            }
+
+            if (_characterLabel != null)
+            {
+                // May legitimately be empty for a brief moment (host's assignment write hasn't
+                // propagated to this client yet) - not a wiring problem, so no warning here.
+                _characterLabel.text = member.AssignedCharacter;
+            }
+            else
+            {
+                Debug.LogWarning($"[SteamLobbyMemberRow] '{name}' has no _characterLabel assigned in the Inspector.", this);
             }
 
             if (_avatarImage != null)

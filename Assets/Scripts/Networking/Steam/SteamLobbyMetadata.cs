@@ -13,6 +13,7 @@ namespace Mailo.Networking.Steam
         public const string KeyJoinable = "joinable";
         public const string KeyGameMode = "gameMode";
         public const string KeyIsPublic = "isPublic";
+        public const string KeyCharacterAssignments = "characterAssignments";
 
         public const string SessionStateWaitingForPlayers = "WaitingForPlayers";
         public const string GameModeCoop = "coop";

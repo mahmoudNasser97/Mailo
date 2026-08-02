@@ -1,6 +1,7 @@
 using Steamworks;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace Mailo.Networking.Steam
@@ -15,6 +16,7 @@ namespace Mailo.Networking.Steam
         [SerializeField] private Button _joinByIdButton;
         [SerializeField] private Button _leaveLobbyButton;
         [SerializeField] private Button _inviteFriendButton;
+        [SerializeField] private Button _startButton;
 
         private bool _operationInProgress;
 
@@ -40,11 +42,13 @@ namespace Mailo.Networking.Steam
             SteamLobbyManager.LobbyMembersChanged += OnLobbyMembersChanged;
             SteamLobbyManager.LobbyLeft += OnLobbyLeft;
             SteamLobbyManager.LobbyInviteAccepted += OnLobbyInviteAccepted;
+            SteamLobbyManager.LobbyDataUpdated += OnLobbyDataUpdated;
 
             if (_createLobbyButton != null) _createLobbyButton.onClick.AddListener(OnCreateLobbyClicked);
             if (_joinByIdButton != null) _joinByIdButton.onClick.AddListener(OnJoinByIdClicked);
             if (_leaveLobbyButton != null) _leaveLobbyButton.onClick.AddListener(OnLeaveLobbyClicked);
             if (_inviteFriendButton != null) _inviteFriendButton.onClick.AddListener(OnInviteFriendClicked);
+            if (_startButton != null) _startButton.onClick.AddListener(OnStartClicked);
         }
 
         private void OnDisable()
@@ -54,11 +58,13 @@ namespace Mailo.Networking.Steam
             SteamLobbyManager.LobbyMembersChanged -= OnLobbyMembersChanged;
             SteamLobbyManager.LobbyLeft -= OnLobbyLeft;
             SteamLobbyManager.LobbyInviteAccepted -= OnLobbyInviteAccepted;
+            SteamLobbyManager.LobbyDataUpdated -= OnLobbyDataUpdated;
 
             if (_createLobbyButton != null) _createLobbyButton.onClick.RemoveListener(OnCreateLobbyClicked);
             if (_joinByIdButton != null) _joinByIdButton.onClick.RemoveListener(OnJoinByIdClicked);
             if (_leaveLobbyButton != null) _leaveLobbyButton.onClick.RemoveListener(OnLeaveLobbyClicked);
             if (_inviteFriendButton != null) _inviteFriendButton.onClick.RemoveListener(OnInviteFriendClicked);
+            if (_startButton != null) _startButton.onClick.RemoveListener(OnStartClicked);
         }
 
         private void OnCreateLobbyClicked()
@@ -120,6 +126,21 @@ namespace Mailo.Networking.Steam
         private void OnLobbyMembersChanged(CSteamID lobbyId)
         {
             RefreshMemberList();
+            // Member count affects Start's interactable state - must refresh here too, not
+            // just after locally-initiated actions like Create/Join/Leave.
+            UpdateButtonStates();
+        }
+
+        private void OnLobbyDataUpdated(CSteamID lobbyId)
+        {
+            // Doesn't tell us which key changed, so just refresh unconditionally - cheap at 4 rows.
+            RefreshMemberList();
+            UpdateButtonStates();
+        }
+
+        private void OnStartClicked()
+        {
+            SceneManager.LoadScene("Game");
         }
 
         private void OnLobbyLeft()
@@ -198,6 +219,19 @@ namespace Mailo.Networking.Steam
             if (_lobbyIdInputField != null) _lobbyIdInputField.interactable = canStartNewAction;
             if (_leaveLobbyButton != null) _leaveLobbyButton.interactable = canManageCurrentLobby;
             if (_inviteFriendButton != null) _inviteFriendButton.interactable = canManageCurrentLobby;
+
+            if (_startButton != null)
+            {
+                string maxPlayersRaw = SteamLobbyManager.GetLobbyMetadata(SteamLobbyMetadata.KeyMaxPlayers);
+                if (!int.TryParse(maxPlayersRaw, out int maxPlayers))
+                    maxPlayers = 4;
+
+                bool canStart = canManageCurrentLobby
+                    && SteamLobbyManager.IsLobbyOwner()
+                    && SteamLobbyManager.GetLobbyMembers().Count == maxPlayers;
+
+                _startButton.interactable = canStart;
+            }
         }
 
         private void SetStatus(string message)
