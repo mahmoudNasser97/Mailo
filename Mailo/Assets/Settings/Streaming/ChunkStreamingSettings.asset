@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a7ca482d3da0fd41bd17d6417f91330, type: 3}
+  m_Name: ChunkStreamingSettings
+  m_EditorClassIdentifier:
+  ChunkSize: 125
+  LoadRadius: 2
+  UnloadPadding: 1
+  MaxConcurrentLoads: 2
+  MaxReleasesPerTick: 4
+  RefreshInterval: 0.15
+  EnablePooling: 1
+  MaxPooledChunks: 16
+  DrawGizmos: 1
+  GizmoHeight: 10

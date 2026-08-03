@@ -36,6 +36,12 @@ public class ObjectGrabController : MonoBehaviour
 
     public bool IsHoldingObject => _held != null;
 
+    /// <summary>Public drop, e.g. for stuck-recovery to release a held object before standing up.</summary>
+    public void DropHeld()
+    {
+        if (_held != null) Drop();
+    }
+
     void Awake()
     {
         if (_animator == null)

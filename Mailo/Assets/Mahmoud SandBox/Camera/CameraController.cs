@@ -27,11 +27,25 @@ public class CameraController : MonoBehaviour
     [Header("Transition")]
     [SerializeField] float _transitionSpeed = 12f;
 
+    [Header("Spring Arm")]
+    [Tooltip("SmoothDamp time (seconds) for position follow. 0 = rigid, no lag.")]
+    [SerializeField] float _followLag             = 0.08f;
+    [Tooltip("Sphere radius of the collision probe.")]
+    [SerializeField] float _probeRadius           = 0.2f;
+    [Tooltip("How fast the arm eases back out after a wall clears.")]
+    [SerializeField] float _collisionReturnSpeed  = 6f;
+    [Tooltip("If the target moves farther than this in one frame, snap instead of lagging.")]
+    [SerializeField] float _teleportSnapThreshold = 8f;
+
     Vector3 _currentOffset;
     float   _currentDistance;
     float   _currentFOV;
     float   _yaw, _pitch;
     bool    _cursorLocked = true;
+
+    Vector3 _smoothFollowPos;
+    Vector3 _followVel;
+    float   _currentArmLength;
 
     ObjectGrabController       _grab;
     PhysicsCharacterController _physics;
@@ -67,6 +81,11 @@ public class CameraController : MonoBehaviour
         _currentOffset   = _normalOffset;
         _currentDistance = _normalDistance;
         _currentFOV      = _normalFOV;
+
+        _smoothFollowPos  = _followTarget.position;
+        _followVel        = Vector3.zero;
+        _currentArmLength = _normalDistance;
+
         SetCursorLock(true);
     }
 
@@ -107,21 +126,42 @@ public class CameraController : MonoBehaviour
 
         Quaternion rot = Quaternion.Euler(_pitch, _yaw, 0f);
 
-        // World-space anchor: Y is always world-up, X/Z are camera-relative
-        Vector3 anchor    = _followTarget.position
-                          + Vector3.up * _currentOffset.y
-                          + rot * new Vector3(_currentOffset.x, 0f, _currentOffset.z);
-        Vector3 desiredPos = anchor + rot * (Vector3.back * _currentDistance);
-
-        // Collision — exclude the character's own layer
-        int mask = ~(1 << _followTarget.gameObject.layer);
-        if (Physics.Linecast(anchor, desiredPos, out RaycastHit hit, mask))
-            _camera.transform.position = hit.point + hit.normal * 0.15f;
+        // Camera lag: smooth-follow the target so physics jitter never reaches the camera.
+        // Snap instead of glide when the target teleports (respawn, stuck-recovery, get-up).
+        if (Vector3.Distance(_smoothFollowPos, _followTarget.position) > _teleportSnapThreshold)
+        {
+            _smoothFollowPos = _followTarget.position;
+            _followVel       = Vector3.zero;
+        }
         else
-            _camera.transform.position = desiredPos;
+        {
+            _smoothFollowPos = Vector3.SmoothDamp(_smoothFollowPos, _followTarget.position,
+                                                  ref _followVel, _followLag);
+        }
+
+        // World-space anchor: Y is always world-up, X/Z are camera-relative
+        Vector3 anchor = _smoothFollowPos
+                       + Vector3.up * _currentOffset.y
+                       + rot * new Vector3(_currentOffset.x, 0f, _currentOffset.z);
+
+        // Collision — sphere-probe from anchor outward along the arm, exclude the character's own layer
+        Vector3 armDir     = rot * Vector3.back;
+        float   targetDist = _currentDistance;
+        int     mask       = ~(1 << _followTarget.gameObject.layer);
+        if (Physics.SphereCast(anchor, _probeRadius, armDir, out RaycastHit hit, _currentDistance, mask))
+            targetDist = hit.distance;
+
+        // Shorten instantly (never clip through a wall); ease back out when clear (no pop).
+        if (targetDist < _currentArmLength)
+            _currentArmLength = targetDist;
+        else
+            _currentArmLength = Mathf.Lerp(_currentArmLength, targetDist,
+                                           Time.deltaTime * _collisionReturnSpeed);
+
+        _camera.transform.position = anchor + armDir * _currentArmLength;
 
         // Look at character at height Y (ignoring X/Z offset so char stays in frame)
-        Vector3 lookTarget = _followTarget.position + Vector3.up * _currentOffset.y;
+        Vector3 lookTarget = _smoothFollowPos + Vector3.up * _currentOffset.y;
         _camera.transform.LookAt(lookTarget);
     }
 
