@@ -1,7 +1,6 @@
 using Steamworks;
 using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace Mailo.Networking.Steam
@@ -70,7 +69,9 @@ namespace Mailo.Networking.Steam
         private void OnCreateLobbyClicked()
         {
             SetOperationInProgress(true);
-            SteamLobbyManager.CreateLobby(OnCreateResult);
+            // TEMP (2-player test): explicit maxMembers: 2 overrides the real 4-player default.
+            // Revert to SteamLobbyManager.CreateLobby(OnCreateResult) to go back to 4.
+            SteamLobbyManager.CreateLobby(OnCreateResult, maxMembers: 2);
         }
 
         private void OnJoinByIdClicked()
@@ -140,7 +141,11 @@ namespace Mailo.Networking.Steam
 
         private void OnStartClicked()
         {
-            SceneManager.LoadScene("Game");
+            // Doesn't load the scene directly - just signals via lobby metadata. Every member
+            // (host included) reacts to that signal in Mailo.Networking.Fish.NetworkLobbyBridge:
+            // connects over FishNet, then loads the Game scene locally once its own connection
+            // succeeds, so everyone arrives together without any manual Steam ID entry.
+            SteamLobbyManager.NotifyGameStarting();
         }
 
         private void OnLobbyLeft()
@@ -222,15 +227,20 @@ namespace Mailo.Networking.Steam
 
             if (_startButton != null)
             {
-                string maxPlayersRaw = SteamLobbyManager.GetLobbyMetadata(SteamLobbyMetadata.KeyMaxPlayers);
-                if (!int.TryParse(maxPlayersRaw, out int maxPlayers))
-                    maxPlayers = 4;
+                // Non-hosts never see this button at all (not just disabled) - starting the
+                // game is a host-only action, so showing it greyed-out to everyone else is
+                // just confusing UI they can never use.
+                bool isOwner = inLobby && SteamLobbyManager.IsLobbyOwner();
+                _startButton.gameObject.SetActive(isOwner);
 
-                bool canStart = canManageCurrentLobby
-                    && SteamLobbyManager.IsLobbyOwner()
-                    && SteamLobbyManager.GetLobbyMembers().Count == maxPlayers;
+                if (isOwner)
+                {
+                    string maxPlayersRaw = SteamLobbyManager.GetLobbyMetadata(SteamLobbyMetadata.KeyMaxPlayers);
+                    if (!int.TryParse(maxPlayersRaw, out int maxPlayers))
+                        maxPlayers = 4;
 
-                _startButton.interactable = canStart;
+                    _startButton.interactable = canManageCurrentLobby && SteamLobbyManager.GetLobbyMembers().Count == maxPlayers;
+                }
             }
         }
 

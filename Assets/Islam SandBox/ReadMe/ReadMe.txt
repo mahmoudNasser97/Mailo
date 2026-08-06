@@ -210,6 +210,8 @@ IMPORTANT LIMITATION: Start's scene load is LOCAL ONLY for now. Clicking it
 only changes YOUR OWN screen - the other 3 players stay in the lobby scene.
 Real synced scene transition needs FishNet, not installed yet. This is
 expected for this step, not a bug.
+>>> RESOLVED in STEP 4 below - Start now connects everyone over the network
+>>> and every client follows automatically. See Step 4 for details.
 
 FILES
 -----
@@ -253,6 +255,128 @@ HOW TO TEST
    appear, spread out and distinct.
 
 ================================================================================
+ STEP 4 — FISHNET + FISHYSTEAMWORKS: AUTOMATIC CONNECT + SCENE LOAD
+================================================================================
+
+WHAT IT DOES
+------------
+Installs FishNet (networking framework) and FishySteamworks (Steam transport
+for it), and wires them into the existing lobby flow so clicking "Start"
+(from Step 3) now actually connects every lobby member over the network and
+sends each of them into the Game scene automatically - no manual Steam ID
+typing, no extra buttons for real players. This directly resolves Step 3's
+"local only" limitation - the client now follows the host into the Game
+scene. Each client independently loads the Game scene the moment ITS OWN
+connection succeeds (not a server-authoritative synced scene load via
+FishNet's own networked SceneManager - that's a possible future refinement),
+which in practice happens within a fraction of a second of each other.
+
+PACKAGES INSTALLED
+-------------------
+- FishNet: Networking Evolved (v4.7.2), installed via Package Manager git
+  URL: https://github.com/FirstGearGames/FishNet.git?path=Assets/FishNet
+  (added to Packages/manifest.json - Unity resolves/downloads it via git,
+  requires Git 2.14.0+ installed and on PATH).
+- FishySteamworks, installed manually: latest .unitypackage from
+  https://github.com/FirstGearGames/FishySteamworks/releases, imported via
+  Assets > Import Package > Custom Package.
+
+IMPORTANT: FishySteamworks' repo also ships a separate "SteamManager.unitypackage"
+alongside the transport script, for projects that don't already have a Steam
+bootstrap. We do NOT import that one - this project already has its own
+Assets/Scripts/Steamworks.NET/SteamManager.cs, and every step above depends
+on it. Importing a second one would create a duplicate SteamManager and
+throw "Tried to Initialize the SteamAPI twice in one session!" (that file's
+own guard). Only FishySteamworks.cs and its Core/ support files get imported.
+
+FishySteamworks has NO App ID field - don't look for one. It uses whatever
+Steam session is already active via steam_appid.txt + our own SteamManager.
+The field that DOES matter is "Peer To Peer" on the FishySteamworks
+component - it MUST be enabled (ticked), or connecting via Steam ID (instead
+of a raw IP) will not work.
+
+FILES
+-----
+- Packages/manifest.json (FishNet git dependency added)
+- Assets/Scripts/Networking/Mailo.Networking.asmdef (added a reference to
+  FishNet's own Runtime asmdef so our isolated assembly can see FishNet
+  types - same pattern already used for Steamworks.NET and TextMeshPro)
+- Assets/FishNet/Plugins/FishySteamworks/ (imported package, not ours -
+  don't hand-edit this folder)
+- Assets/Scripts/Networking/Fish/NetworkLobbyBridge.cs (NEW - the actual
+  integration: listens for the Start signal, connects over FishNet
+  automatically for host and client alike, loads the Game scene locally
+  once each machine's own connection succeeds)
+- Assets/Scripts/Networking/Steam/SteamLobbyMetadata.cs (added
+  KeyNetworkStarted = "networkStarted", a new lobby-level metadata flag)
+- Assets/Scripts/Networking/Steam/SteamLobbyManager.cs (added
+  NotifyGameStarting() - owner-only write of the networkStarted flag,
+  mirrors every other owner-gated metadata write already in this file)
+- Assets/Scripts/Networking/Steam/Debug/SteamLobbyDebugProbe.cs (Start
+  button's click handler now calls SteamLobbyManager.NotifyGameStarting()
+  instead of loading the scene directly - the actual connect+load now
+  happens in NetworkLobbyBridge, reacting to that flag)
+- Assets/Scripts/Networking/Fish/Debug/NetworkConnectionDebugProbe.cs -
+  DELETED. This was a throwaway raw-connectivity test harness (manual
+  Host/Join buttons + manual Steam ID entry) used only to prove FishNet +
+  FishySteamworks could connect two Steam clients before wiring the real
+  integration above. No longer needed now that Start does this for real.
+
+HOW IT WORKS (no manual Steam ID typing needed anymore)
+----------------------------------------------------------
+1. Host clicks "Start" -> NotifyGameStarting() writes networkStarted="true"
+   to lobby metadata (owner-only write, same mechanism as every other
+   lobby metadata field).
+2. Every member's NetworkLobbyBridge (subscribed to LobbyDataUpdated) sees
+   the flag flip to "true":
+     - Host: starts the FishNet server (ServerManager.StartConnection()),
+       then starts its own local client half
+       (ClientManager.StartConnection() with no address - FishySteamworks
+       detects the server is already running and routes this through its
+       internal host-loopback socket automatically, not a real network hop).
+     - Everyone else: reads hostSteamId (already known since Step 2, set
+       at lobby creation) and connects directly
+       (ClientManager.StartConnection(hostSteamId)).
+3. The moment a member's OWN ClientManager reports
+   LocalConnectionState.Started, THAT machine loads the Game scene
+   (SceneManager.LoadScene("Game")) - independently, not waiting for
+   anyone else. In practice all members arrive within a fraction of a
+   second of each other since Steam's P2P handshake is fast.
+4. Leaving the lobby (LobbyLeft) stops both the server and client
+   connections and resets the trigger flags, so a fresh lobby session can
+   go through this flow again cleanly.
+
+SCENE SETUP (once)
+-------------------
+1. In the lobby scene, create an empty GameObject named "NetworkManager".
+   Add Component > search "NetworkManager" (listed under FishNet > Manager)
+   and add it. NOTE: right after importing, Add Component's search index
+   can be stale and not find it - try browsing the menu tree manually
+   (FishNet > Manager > NetworkManager) instead of searching, or fully
+   restart the Unity Editor (not just refocus) if it's still missing.
+2. On the same GameObject, Add Component > "FishySteamworks", and enable
+   (tick) its "Peer To Peer" field. Leave everything else default.
+   "Dont Destroy On Load" on the NetworkManager component itself should
+   already be true by default - leave it, it's what keeps the connection
+   alive across the Lobby -> Game scene transition.
+3. Add Component > "Network Lobby Bridge" (same GameObject is fine), and
+   drag the same "NetworkManager" GameObject into its one field,
+   "Network Manager".
+4. That's it - no new UI needed. The existing "Start" button (Step 3)
+   drives all of this now.
+
+HOW TO TEST
+-----------
+1. Two testers join the same lobby (any path from Step 2/3).
+2. The lobby owner clicks "Start".
+3. Expected in BOTH testers' Consoles shortly after: "[NetworkLobbyBridge]
+   Server: Started" (host only) and "[NetworkLobbyBridge] Client: Started"
+   (both).
+4. Expected: BOTH testers' screens switch to the Game scene automatically,
+   without the non-host tester clicking anything. In the Hierarchy, capsules
+   should appear for each joined member, same as Step 3's test.
+
+================================================================================
  TESTING WITHOUT STEAM RUNNING (applies to all steps above)
 ================================================================================
 Every manager (SteamIdentityManager, SteamLobbyManager) checks
@@ -282,3 +406,9 @@ Steam), but is expected and safe when a teammate tests without Steam open.
 - Step 3 added: random stable character assignment (Bruno/Ranger/Zara/Pixel)
   shown per lobby member, plus a host-only "Start" button (enabled only at
   4/4 players) that loads the Game scene and spawns placeholder capsules.
+- Step 4 added: FishNet + FishySteamworks installed. Start now automatically
+  connects every lobby member over the network (host starts server, others
+  auto-connect to the already-known hostSteamId) and each client loads the
+  Game scene locally once its own connection succeeds - resolving Step 3's
+  "local only" limitation. NetworkConnectionDebugProbe.cs (the raw
+  connectivity test harness) removed, superseded by NetworkLobbyBridge.cs.

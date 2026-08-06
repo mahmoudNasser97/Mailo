@@ -190,6 +190,21 @@ namespace Mailo.Networking.Steam
             LobbyLeft?.Invoke();
         }
 
+        // Owner-only write (Steam silently no-ops it for non-owners, same as all other lobby
+        // metadata writes) - signals every member to auto-connect via FishNet. See
+        // Mailo.Networking.Fish.NetworkLobbyBridge, which reacts to this through LobbyDataUpdated.
+        public static void NotifyGameStarting()
+        {
+            if (!WarnIfNotInitialized())
+                return;
+
+            var manager = Instance;
+            if (manager._currentLobbyId.m_SteamID == 0)
+                return;
+
+            SteamMatchmaking.SetLobbyData(manager._currentLobbyId, SteamLobbyMetadata.KeyNetworkStarted, "true");
+        }
+
         public static void InviteFriendViaOverlay()
         {
             if (!WarnIfNotInitialized())
