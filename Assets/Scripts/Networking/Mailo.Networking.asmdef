@@ -4,7 +4,8 @@
     "references": [
         "GUID:68bd7fdb68ef2684e982e8a9825b18a5",
         "Mailo.Steamworks.Bootstrap",
-        "GUID:6055be8ebefd69e48b49212b09b47b2f"
+        "GUID:6055be8ebefd69e48b49212b09b47b2f",
+        "GUID:7c88a4a7926ee5145ad2dfa06f454c67"
     ],
     "includePlatforms": [
         "Android",

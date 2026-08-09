@@ -18,6 +18,8 @@ namespace Mailo.Networking.Steam
 
             if (_nameLabel != null)
                 _nameLabel.text = displayName;
+            else
+                Debug.LogWarning("[SteamIdentityDebugProbe] _nameLabel is not assigned in the Inspector.", this);
 
             SteamIdentityManager.RequestLocalAvatar(OnLocalAvatarReady);
         }
@@ -34,6 +36,8 @@ namespace Mailo.Networking.Steam
 
             if (_preview != null)
                 _preview.texture = avatar;
+            else
+                Debug.LogWarning("[SteamIdentityDebugProbe] _preview is not assigned in the Inspector.", this);
         }
     }
 }
