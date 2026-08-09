@@ -52,21 +52,33 @@ Code is written and self-reviewed but **not compiled or tested** (editor was ope
 
 ---
 
-## Remaining steps
+## Remaining steps (editor checklist)
 
-1. **Run tests** (above) — acceptance criterion #6.
-2. **Create rig:** Tools → Scene Chunks → Streaming Setup → Setup tab → assign the settings asset
-   → Create Streaming Rig In Scene. (This adds ChunkFogSync, which pulls fog 1050 → 250 m.)
-3. **Phase 3 — slice:** select the static visual roots (Grass, Vegetation, Props, Rocks, Trees,
-   Ruins — review Animals/FX/Ships/Animal Groups for gameplay/movement and exclude if so; keep
-   Terrain/lights/navmesh/audio out) → Tools → Scene Chunks → **Flatten Selected Roots For Slicing**
-   → Slice tab → Source Root = *Streamable Root*, ChunkSize 125 → **Preview**.
-   **→ STOP after Preview and review the distribution** (flag hotspots >3× median) before baking.
-4. **Phase 4 — wire player:** add `ChunkStreamTarget` to the player (`bindOnEnable = true` is fine
-   while single-player; guard with `Bind()` when FishNet lands). Assigning Character Camera as the
-   streamer `view` is optional here (camera sits in the player's chunk).
-5. **Acceptance:** measure peak memory + frame time before/after (Profiler on a build); verify no
-   pop-in inside fog, no boundary thrash (Diagnostics grid), no chunk released when spinning.
+Do these top to bottom. Two report-back gates: after step 2 (test result) and at step 4 (Preview).
+
+1. **Compile:** focus Unity so it imports the new files → open Console (Ctrl+Shift+C) → confirm
+   0 errors. If red errors appear, stop and fix them first.
+2. **Run tests:** Window → General → Test Runner → EditMode → Run All (filter
+   `Nasser.SceneChunks.Tests`). Expect ~20 green (acceptance criterion #6). **Report result.**
+3. **Create rig:** Tools → Scene Chunks → Streaming Setup (Ctrl+Shift+K) → Setup tab → drag
+   `Assets/Settings/Streaming/ChunkStreamingSettings.asset` into the Settings field → Create
+   Streaming Rig In Scene. (Adds ChunkFogSync → fog snaps 1050 → 250 m, intended.)
+4. **Phase 3 — flatten + Preview (STOP):** in the Hierarchy select the static visual roots
+   (Grass, Vegetation, Props, Rocks, Trees, Ruins; review Animals/FX/Ships/Animal Groups and
+   exclude anything that moves or is interactable; keep Terrain/lights/navmesh/audio out) →
+   Tools → Scene Chunks → **Flatten Selected Roots For Slicing** → Slice tab → Source Root =
+   `Streamable Root`, Chunk Size 125 → **Preview Distribution**.
+   **→ STOP and send the Preview distribution** (flag hotspots >3× median) before baking.
+5. **Bake** (only after Preview review): Slice tab → Slice And Bake Prefabs (keep Disable
+   Originals on).
+6. **Phase 4 — wire player:** add `ChunkStreamTarget` to `ThirdPersonPuppet` (`bindOnEnable = true`
+   is fine while single-player; guard with `Bind()` when FishNet lands). Assigning Character
+   Camera as the streamer `view` is optional here.
+7. **Acceptance:** Diagnostics grid shows zero load/unload after settling on a boundary; spinning
+   360° releases nothing near the player; a full lap at max speed shows no pop-in inside fog;
+   Profiler (on a build) — record peak memory + frame time before/after.
+
+_Alternative to step 2: I can run the tests headless if you close the editor (I'll locate Unity 6000.2.7f2)._
 
 ## Gotchas
 - ChunkFogSync overwrites RenderSettings fog whenever enabled — the single source of truth for view distance.
