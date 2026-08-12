@@ -5,6 +5,8 @@ public class HitReactor : MonoBehaviour
     [SerializeField] float _minThrowSpeed   = 4f;
     [SerializeField] float _forceMultiplier = 20f;
 
+    public event System.Action<float, Vector3, Vector3> OnImpact; // impulse, direction, hitPoint
+
     PuppetRagdollController _ragdoll;
 
     void Awake()
@@ -14,17 +16,19 @@ public class HitReactor : MonoBehaviour
             _ragdoll = GetComponentInParent<PuppetRagdollController>();
     }
 
-    public void TakeHit(float throwSpeed, Vector3 direction)
+    public void TakeHit(float throwSpeed, Vector3 direction, Vector3 hitPoint = default)
     {
         if (throwSpeed < _minThrowSpeed) return;
 
+        float impulse = throwSpeed * _forceMultiplier;
+        OnImpact?.Invoke(impulse, direction, hitPoint);
+
         if (_ragdoll != null)
         {
-            _ragdoll.ReportImpact(throwSpeed * _forceMultiplier);
+            _ragdoll.ReportImpact(impulse);
             return;
         }
 
-        // Generic fallback: push all active rigidbodies in the hierarchy
         foreach (Rigidbody rb in GetComponentsInChildren<Rigidbody>())
         {
             if (!rb.isKinematic)

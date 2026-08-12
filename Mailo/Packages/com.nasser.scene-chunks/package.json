@@ -1,0 +1,25 @@
+{
+  "name": "com.nasser.scene-chunks",
+  "version": "1.1.0",
+  "displayName": "Scene Chunks",
+  "description": "Grid-based scene streaming for Unity. Keeps a moving window of chunks loaded around the player so memory stays flat no matter how large the world gets. Includes hysteresis, pooling, load budgeting, and an editor tool that slices an existing scene into chunk prefabs.",
+  "unity": "2021.3",
+  "author": {
+    "name": "Nasser"
+  },
+  "keywords": [
+    "streaming",
+    "chunks",
+    "open world",
+    "performance",
+    "mobile",
+    "level of detail"
+  ],
+  "samples": [
+    {
+      "displayName": "Basic Streaming",
+      "description": "A minimal scene showing the streamer, a prefab provider, and a moving target.",
+      "path": "Samples~/BasicStreaming"
+    }
+  ]
+}

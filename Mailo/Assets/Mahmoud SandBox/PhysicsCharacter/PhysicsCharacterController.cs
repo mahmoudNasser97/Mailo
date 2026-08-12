@@ -24,11 +24,12 @@ public class PhysicsCharacterController : MonoBehaviour
 {
     // ── Movement ──────────────────────────────────────────────────────────────
     [Header("Movement")]
-    public float moveForce    = 25f;
-    public float maxMoveSpeed = 5f;
-    public float rotateSpeed  = 12f;
-    public float movingDrag   = 2f;
-    public float stoppingDrag = 8f;
+    public float moveForce       = 25f;
+    public float maxMoveSpeed    = 5f;
+    public float rotateSpeed     = 12f;
+    public float aimRotateSpeed  = 720f;   // degrees/sec snap when aiming
+    public float movingDrag      = 2f;
+    public float stoppingDrag    = 8f;
 
     // ── Ground ────────────────────────────────────────────────────────────────
     [Header("Ground Check")]
@@ -74,6 +75,9 @@ public class PhysicsCharacterController : MonoBehaviour
     static readonly int _speedHash = Animator.StringToHash("Speed");
     static readonly int _moveXHash = Animator.StringToHash("MoveX");
     static readonly int _moveYHash = Animator.StringToHash("MoveY");
+
+    public bool  IsAiming  { get; set; }
+    public float CameraYaw { get; set; }
 
     void Awake()
     {
@@ -126,21 +130,34 @@ public class PhysicsCharacterController : MonoBehaviour
     {
         float h = Input.GetAxisRaw("Horizontal");
         float v = Input.GetAxisRaw("Vertical");
-        Vector3 input = new Vector3(h, 0f, v);
+
+        Vector3 camForward = Vector3.Scale(Camera.main.transform.forward, new Vector3(1f, 0f, 1f)).normalized;
+        Vector3 camRight   = Vector3.Scale(Camera.main.transform.right,   new Vector3(1f, 0f, 1f)).normalized;
+        Vector3 input      = camForward * v + camRight * h;
+        if (input.sqrMagnitude > 1f) input.Normalize();
         bool moving = input.sqrMagnitude > 0.01f;
 
         _rb.linearDamping = moving ? movingDrag : stoppingDrag;
 
         if (moving)
         {
-            input = input.normalized;
-
             Vector3 flatVel = new Vector3(_rb.linearVelocity.x, 0f, _rb.linearVelocity.z);
             if (flatVel.magnitude < maxMoveSpeed)
                 _rb.AddForce(input * moveForce, ForceMode.Acceleration);
 
-            Quaternion targetRot = Quaternion.LookRotation(input);
-            _rb.MoveRotation(Quaternion.Slerp(transform.rotation, targetRot, rotateSpeed * Time.fixedDeltaTime));
+            Quaternion targetRot = IsAiming
+                ? Quaternion.Euler(0f, CameraYaw, 0f)
+                : Quaternion.LookRotation(input);
+
+            Quaternion nextRot = IsAiming
+                ? Quaternion.RotateTowards(transform.rotation, targetRot, aimRotateSpeed * Time.fixedDeltaTime)
+                : Quaternion.Slerp(transform.rotation, targetRot, rotateSpeed * Time.fixedDeltaTime);
+            _rb.MoveRotation(nextRot);
+        }
+        else if (IsAiming)
+        {
+            Quaternion aimTarget = Quaternion.Euler(0f, CameraYaw, 0f);
+            _rb.MoveRotation(Quaternion.RotateTowards(transform.rotation, aimTarget, aimRotateSpeed * Time.fixedDeltaTime));
         }
 
         _animator.SetFloat(_speedHash, moving ? 1f : 0f,      0.1f, Time.fixedDeltaTime);

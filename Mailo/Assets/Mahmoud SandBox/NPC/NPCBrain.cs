@@ -1,0 +1,188 @@
+using UnityEngine;
+
+public enum NPCState { Patrol, Chase, Throw, HitReact }
+
+[RequireComponent(typeof(CharacterController))]
+[RequireComponent(typeof(Animator))]
+public class NPCBrain : MonoBehaviour
+{
+    [Header("Ranges")]
+    [SerializeField] float _chaseRange   = 15f;
+    [SerializeField] float _throwRange   = 6f;
+    [SerializeField] float _gravity      = 20f;
+
+    [Header("Sub-components")]
+    [SerializeField] NPCPatroller   _patroller;
+    [SerializeField] NPCChaser      _chaser;
+    [SerializeField] NPCThrower     _thrower;
+    [SerializeField] NPCHitReaction _hitReaction;
+    [SerializeField] NPCRVOAgent    _rvoAgent;
+    [SerializeField] NPCHitVFX      _hitVFX;
+
+    CharacterController     _cc;
+    PuppetRagdollController _ragdoll;
+    float                   _verticalVelocity;
+    float                   _playerRefreshTimer;
+    GameObject[]            _cachedPlayers;
+    NPCState                _preHitState = NPCState.Patrol;
+    float                   _hitReactStartTime;
+    const float             MaxHitReactDuration = 3f;
+
+    const float PlayerRefreshInterval = 1f;
+
+    public NPCState  State  { get; private set; } = NPCState.Patrol;
+    public Transform Player { get; private set; }
+
+    void Awake()
+    {
+        _cc      = GetComponent<CharacterController>();
+        var anim = GetComponent<Animator>();
+        anim.applyRootMotion = false;
+
+        _ragdoll = GetComponentInParent<PuppetRagdollController>()
+                ?? transform.root.GetComponentInChildren<PuppetRagdollController>();
+
+        RefreshPlayers();
+    }
+
+    void Start()
+    {
+        if (_cachedPlayers == null || _cachedPlayers.Length == 0)
+            Debug.LogWarning($"[NPCBrain] '{name}': No GameObjects tagged 'Player' found in scene. Tag your player(s) with 'Player'.");
+    }
+
+    void Update()
+    {
+        _verticalVelocity = _cc.isGrounded
+            ? -1f
+            : _verticalVelocity - _gravity * Time.deltaTime;
+
+        bool knocked = _ragdoll != null && _ragdoll.State != PuppetPhysicsState.Balanced;
+        if (knocked)
+        {
+            _cc.Move(Vector3.up * _verticalVelocity * Time.deltaTime);
+            return;
+        }
+
+        // Periodically refresh the player list to pick up players who join/leave
+        _playerRefreshTimer -= Time.deltaTime;
+        if (_playerRefreshTimer <= 0f)
+            RefreshPlayers();
+
+        // Pick the nearest active player each frame
+        Player = FindNearestPlayer();
+
+        if (Player == null)
+        {
+            _cc.Move(Vector3.up * _verticalVelocity * Time.deltaTime);
+            return;
+        }
+
+        if (State == NPCState.HitReact)
+        {
+            // Safety: force recovery if coroutine was lost or took too long
+            if (Time.time - _hitReactStartTime > MaxHitReactDuration)
+                RecoverFromHit();
+        }
+        else
+        {
+            UpdateStateTransitions();
+        }
+
+        Vector3 desired = GetDesiredVelocity();
+        Vector3 moved   = _rvoAgent != null
+            ? _rvoAgent.ComputeAvoidanceVelocity(desired)
+            : desired;
+
+        moved.y = _verticalVelocity;
+        _cc.Move(moved * Time.deltaTime);
+    }
+
+    void RefreshPlayers()
+    {
+        _cachedPlayers      = GameObject.FindGameObjectsWithTag("Player");
+        _playerRefreshTimer = PlayerRefreshInterval;
+    }
+
+    Transform FindNearestPlayer()
+    {
+        if (_cachedPlayers == null || _cachedPlayers.Length == 0) return null;
+
+        Transform nearest = null;
+        float     bestSqr = float.MaxValue;
+        Vector3   selfXZ  = new Vector3(transform.position.x, 0f, transform.position.z);
+
+        foreach (GameObject p in _cachedPlayers)
+        {
+            if (p == null || !p.activeInHierarchy) continue;
+
+            Vector3 pXZ   = new Vector3(p.transform.position.x, 0f, p.transform.position.z);
+            float   sqr   = (pXZ - selfXZ).sqrMagnitude;
+            if (sqr < bestSqr)
+            {
+                bestSqr = sqr;
+                nearest = p.transform;
+            }
+        }
+
+        return nearest;
+    }
+
+    void UpdateStateTransitions()
+    {
+        Vector3 selfXZ   = new Vector3(transform.position.x, 0f, transform.position.z);
+        Vector3 playerXZ = new Vector3(Player.position.x, 0f, Player.position.z);
+        float   dist     = Vector3.Distance(selfXZ, playerXZ);
+
+        switch (State)
+        {
+            case NPCState.Patrol:
+                if (dist <= _chaseRange) ChangeState(NPCState.Chase);
+                break;
+            case NPCState.Chase:
+                if (dist > _chaseRange)       ChangeState(NPCState.Patrol);
+                else if (dist <= _throwRange) ChangeState(NPCState.Throw);
+                break;
+            case NPCState.Throw:
+                if (dist > _throwRange) ChangeState(NPCState.Chase);
+                break;
+        }
+    }
+
+    void ChangeState(NPCState next)
+    {
+        State = next;
+    }
+
+    Vector3 GetDesiredVelocity()
+    {
+        return State switch
+        {
+            NPCState.Patrol   => _patroller != null ? _patroller.GetDesiredVelocity() : Vector3.zero,
+            // Keep moving toward player while throwing — only the throw animation briefly pauses movement
+            NPCState.Chase    => _chaser    != null ? _chaser.GetDesiredVelocity()    : Vector3.zero,
+            NPCState.Throw    => _chaser    != null ? _chaser.GetDesiredVelocity()    : Vector3.zero,
+            NPCState.HitReact => Vector3.zero,
+            _                 => Vector3.zero,
+        };
+    }
+
+    public void ReportHit(float impulse, Vector3 hitPoint, Vector3 hitDir)
+    {
+        if (State == NPCState.HitReact) return;
+        _preHitState       = State;
+        _hitReactStartTime = Time.time;
+        ChangeState(NPCState.HitReact);
+        _hitVFX?.PlayHitEffects(hitPoint, hitDir);
+    }
+
+    public void RecoverFromHit() => ChangeState(_preHitState);
+
+    void OnDrawGizmosSelected()
+    {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, _chaseRange);
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, _throwRange);
+    }
+}
