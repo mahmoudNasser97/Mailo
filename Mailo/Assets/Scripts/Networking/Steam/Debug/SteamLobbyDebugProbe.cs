@@ -69,9 +69,10 @@ namespace Mailo.Networking.Steam
         private void OnCreateLobbyClicked()
         {
             SetOperationInProgress(true);
-            // TEMP (2-player test): explicit maxMembers: 2 overrides the real 4-player default.
-            // Revert to SteamLobbyManager.CreateLobby(OnCreateResult) to go back to 4.
-            SteamLobbyManager.CreateLobby(OnCreateResult, maxMembers: 2);
+            // Real default is 4; LobbyTestSettings (Steam/Debug/) lets this drop to 2 for
+            // easier testing without editing code - see that file to toggle it.
+            int maxMembers = LobbyTestSettings.TestModeTwoPlayers ? 2 : 4;
+            SteamLobbyManager.CreateLobby(OnCreateResult, maxMembers: maxMembers);
         }
 
         private void OnJoinByIdClicked()

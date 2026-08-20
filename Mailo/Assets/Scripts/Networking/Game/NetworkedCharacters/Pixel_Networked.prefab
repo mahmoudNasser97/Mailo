@@ -1,0 +1,385 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1001 &3921953918926171445
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 2019995541253481260, guid: 4022ad3b1542b0543a950daa05b5685f,
+        type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2019995541253481260, guid: 4022ad3b1542b0543a950daa05b5685f,
+        type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2019995541253481260, guid: 4022ad3b1542b0543a950daa05b5685f,
+        type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2019995541253481260, guid: 4022ad3b1542b0543a950daa05b5685f,
+        type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2019995541253481260, guid: 4022ad3b1542b0543a950daa05b5685f,
+        type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2019995541253481260, guid: 4022ad3b1542b0543a950daa05b5685f,
+        type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2019995541253481260, guid: 4022ad3b1542b0543a950daa05b5685f,
+        type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2019995541253481260, guid: 4022ad3b1542b0543a950daa05b5685f,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2019995541253481260, guid: 4022ad3b1542b0543a950daa05b5685f,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2019995541253481260, guid: 4022ad3b1542b0543a950daa05b5685f,
+        type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 2705294192686576168, guid: 4022ad3b1542b0543a950daa05b5685f,
+        type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3883196304461045506, guid: 4022ad3b1542b0543a950daa05b5685f,
+        type: 3}
+      propertyPath: _camera
+      value: 
+      objectReference: {fileID: 4794523614177249263}
+    - target: {fileID: 8487485679682391926, guid: 4022ad3b1542b0543a950daa05b5685f,
+        type: 3}
+      propertyPath: m_Name
+      value: Pixel_Networked
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 8487485679682391926, guid: 4022ad3b1542b0543a950daa05b5685f,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1612422977789534479}
+    - targetCorrespondingSourceObject: {fileID: 8487485679682391926, guid: 4022ad3b1542b0543a950daa05b5685f,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4705802716404075055}
+    - targetCorrespondingSourceObject: {fileID: 2397517301526158792, guid: 4022ad3b1542b0543a950daa05b5685f,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7137779201390562593}
+    - targetCorrespondingSourceObject: {fileID: 284261889104332709, guid: 4022ad3b1542b0543a950daa05b5685f,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5245970351171060781}
+  m_SourcePrefab: {fileID: 100100000, guid: 4022ad3b1542b0543a950daa05b5685f, type: 3}
+--- !u!114 &256272213098443319 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3883196304461045506, guid: 4022ad3b1542b0543a950daa05b5685f,
+    type: 3}
+  m_PrefabInstance: {fileID: 3921953918926171445}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4874037252187267651}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 56daec7359049e24c932a549c80fdb70, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CameraController
+--- !u!114 &1389140314356983883 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2678132762319750526, guid: 4022ad3b1542b0543a950daa05b5685f,
+    type: 3}
+  m_PrefabInstance: {fileID: 3921953918926171445}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1668624374730223869}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc555ffe423d44c2f983615b1af3cef4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1 &1434034688221585181 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2705294192686576168, guid: 4022ad3b1542b0543a950daa05b5685f,
+    type: 3}
+  m_PrefabInstance: {fileID: 3921953918926171445}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1668624374730223869 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2397517301526158792, guid: 4022ad3b1542b0543a950daa05b5685f,
+    type: 3}
+  m_PrefabInstance: {fileID: 3921953918926171445}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &7137779201390562593
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1668624374730223869}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2836e36774ca1c4bbbee976e17b649c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FishNet.Runtime::FishNet.Component.Transforming.NetworkTransform
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: 1612422977789534479}
+  _networkObjectCache: {fileID: 0}
+  _componentConfiguration: 0
+  _synchronizeParent: 0
+  _packing:
+    Position: 1
+    Rotation: 1
+    Scale: 0
+  _useScaledTime: 1
+  _interpolation: 2
+  _extrapolation: 2
+  _enableTeleport: 0
+  _teleportThreshold: 1
+  _clientAuthoritative: 1
+  _sendToOwner: 1
+  _interval: 1
+  _synchronizePosition: 1
+  _positionSensitivity: 0.001
+  _positionSnapping:
+    X: 0
+    Y: 0
+    Z: 0
+  _synchronizeRotation: 1
+  _rotationSnapping:
+    X: 0
+    Y: 0
+    Z: 0
+  _synchronizeScale: 1
+  _scaleSensitivity: 0.001
+  _scaleSnapping:
+    X: 0
+    Y: 0
+    Z: 0
+--- !u!95 &2497248678446683609 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 1496767646243977452, guid: 4022ad3b1542b0543a950daa05b5685f,
+    type: 3}
+  m_PrefabInstance: {fileID: 3921953918926171445}
+  m_PrefabAsset: {fileID: 0}
+--- !u!54 &2647788352403225778 stripped
+Rigidbody:
+  m_CorrespondingSourceObject: {fileID: 1356499608831955335, guid: 4022ad3b1542b0543a950daa05b5685f,
+    type: 3}
+  m_PrefabInstance: {fileID: 3921953918926171445}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &3863088894429194896 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 284261889104332709, guid: 4022ad3b1542b0543a950daa05b5685f,
+    type: 3}
+  m_PrefabInstance: {fileID: 3921953918926171445}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &5245970351171060781
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3863088894429194896}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8cac635f24954048aad3a6ff9110beb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FishNet.Runtime::FishNet.Component.Animating.NetworkAnimator
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: 1612422977789534479}
+  _networkObjectCache: {fileID: 0}
+  IgnoredParameters: []
+  _animator: {fileID: 2497248678446683609}
+  _synchronizeWhenDisabled: 0
+  _smoothFloats: 1
+  _interpolation: 2
+  _clientAuthoritative: 1
+  _sendToOwner: 0
+  _continuousChannel: 0
+--- !u!20 &4794523614177249263 stripped
+Camera:
+  m_CorrespondingSourceObject: {fileID: 8422863371892320986, guid: 4022ad3b1542b0543a950daa05b5685f,
+    type: 3}
+  m_PrefabInstance: {fileID: 3921953918926171445}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &4874037252187267651 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8487485679682391926, guid: 4022ad3b1542b0543a950daa05b5685f,
+    type: 3}
+  m_PrefabInstance: {fileID: 3921953918926171445}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1612422977789534479
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4874037252187267651}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26b716c41e9b56b4baafaf13a523ba2e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FishNet.Runtime::FishNet.Object.NetworkObject
+  <IsNested>k__BackingField: 0
+  WasActiveDuringEdit: 0
+  WasActiveDuringEdit_Set1: 1
+  <ComponentIndex>k__BackingField: 0
+  <PredictedSpawn>k__BackingField: {fileID: 0}
+  <PredictedOwner>k__BackingField: {fileID: 0}
+  NetworkBehaviours: []
+  InitializedParentNetworkBehaviour: {fileID: 0}
+  InitializedNestedNetworkObjects: []
+  RuntimeParentNetworkBehaviour: {fileID: 0}
+  RuntimeChildNetworkBehaviours: []
+  _isNetworked: 1
+  _isSpawnable: 1
+  _isGlobal: 0
+  _initializeOrder: 0
+  _preventDespawnOnDisconnect: 0
+  _defaultDespawnType: 0
+  _initializedTimestamp: 0
+  _localLevelOfDetailCalculationType: 0
+  _useLevelOfDetail: 0
+  _useRootLevelOfDetail: 1
+  NetworkObserver: {fileID: 0}
+  _enablePrediction: 0
+  _predictionType: 0
+  _localReconcileCorrectionType: 2
+  _graphicalObject: {fileID: 0}
+  _detachGraphicalObject: 0
+  _enableStateForwarding: 1
+  _networkTransform: {fileID: 0}
+  _ownerInterpolation: 1
+  _ownerSmoothedProperties: 255
+  _adaptiveInterpolation: 3
+  _spectatorSmoothedProperties: 255
+  _spectatorInterpolation: 2
+  _enableTeleport: 0
+  _teleportThreshold: 1
+  <PrefabId>k__BackingField: 65535
+  <SpawnableCollectionId>k__BackingField: 0
+  <AssetPathHash>k__BackingField: 15749006757238997617
+  SceneId: 0
+  SerializedTransformProperties:
+    Position: {x: 0, y: 0, z: 0}
+    Rotation: {x: 0, y: 0, z: 0, w: 0}
+    Scale: {x: 0, y: 0, z: 0}
+    IsValid: 0
+--- !u!114 &4705802716404075055
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4874037252187267651}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f3f12beb823f5a5498d52607a93798c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NetworkedCharacterOwnership
+  _componentIndexCache: 255
+  _addedNetworkObject: {fileID: 1612422977789534479}
+  _networkObjectCache: {fileID: 0}
+  _cameraController: {fileID: 256272213098443319}
+  _characterCameraObject: {fileID: 1434034688221585181}
+  _userControl: {fileID: 1389140314356983883}
+  _characterPuppet: {fileID: 5880153996858723432}
+  _characterRigidbody: {fileID: 2647788352403225778}
+  _characterAnimation: {fileID: 6828960305010190624}
+  _grappleController: {fileID: 5836831637991460117}
+  _objectGrabController: {fileID: 5191929931214045529}
+  _gatePullController: {fileID: 8213929510847693622}
+  _seesawParticipant: {fileID: 6532176085409743849}
+--- !u!114 &5191929931214045529 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 9106529740309720172, guid: 4022ad3b1542b0543a950daa05b5685f,
+    type: 3}
+  m_PrefabInstance: {fileID: 3921953918926171445}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1668624374730223869}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f8a9f00c836aba4a96d869742515ce1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ObjectGrabController
+--- !u!114 &5836831637991460117 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7452616516735180832, guid: 4022ad3b1542b0543a950daa05b5685f,
+    type: 3}
+  m_PrefabInstance: {fileID: 3921953918926171445}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1668624374730223869}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1429c2572e338354c8d1396d8a7a6b1c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GrappleController
+--- !u!114 &5880153996858723432 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7491479219295232349, guid: 4022ad3b1542b0543a950daa05b5685f,
+    type: 3}
+  m_PrefabInstance: {fileID: 3921953918926171445}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1668624374730223869}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dff1ae2a2961419e82de262587ae0c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &6532176085409743849 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7839473673217896156, guid: 4022ad3b1542b0543a950daa05b5685f,
+    type: 3}
+  m_PrefabInstance: {fileID: 3921953918926171445}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1668624374730223869}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14dbf19c46e93df44b59b35df6b084df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SeesawParticipant
+--- !u!114 &6828960305010190624 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7541492496705750037, guid: 4022ad3b1542b0543a950daa05b5685f,
+    type: 3}
+  m_PrefabInstance: {fileID: 3921953918926171445}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3863088894429194896}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44963f0d149a94b76a8afd23095c42df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &8213929510847693622 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5156666729067671043, guid: 4022ad3b1542b0543a950daa05b5685f,
+    type: 3}
+  m_PrefabInstance: {fileID: 3921953918926171445}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1668624374730223869}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97dd1c3ab3a4479439a66f93ff3677ad, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GatePullController

@@ -3422,6 +3422,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Mailo.Networking::Mailo.Networking.Fish.NetworkLobbyBridge
   _networkManager: {fileID: 1520916690}
+  _gameSceneName: Demo_Island
 --- !u!1 &1568191871
 GameObject:
   m_ObjectHideFlags: 0
@@ -3752,6 +3753,51 @@ MonoBehaviour:
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
+--- !u!1 &1873508305
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1873508307}
+  - component: {fileID: 1873508306}
+  m_Layer: 0
+  m_Name: LobbyTestSettings
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1873508306
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1873508305}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 330ba6eb85a7e1a41b6a425863c8deae, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Mailo.Networking::Mailo.Networking.Steam.LobbyTestSettings
+  _testModeTwoPlayers: 1
+--- !u!4 &1873508307
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1873508305}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1903775893
 GameObject:
   m_ObjectHideFlags: 0
@@ -4483,3 +4529,4 @@ SceneRoots:
   - {fileID: 950539652}
   - {fileID: 2127531426}
   - {fileID: 1520916688}
+  - {fileID: 1873508307}

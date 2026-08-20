@@ -390,6 +390,155 @@ This will not happen for real players (the game will be launched through
 Steam), but is expected and safe when a teammate tests without Steam open.
 
 ================================================================================
+ STEP 5 — NETWORKED CHARACTER SPAWNING (real prefabs replace capsules)
+================================================================================
+
+WHAT IT DOES
+------------
+Replaces Step 4's placeholder capsules with the 4 real character prefabs
+(Bruno, Ranger, Zara, Pixel) - fully networked over FishNet, so every
+connected player sees everyone else's character move/animate live.
+
+IMPORTANT CONSTRAINT: zero modification to teammate-owned files. The base
+character prefabs and every script they use (CameraController,
+GrappleController, ObjectGrabController, GatePullController,
+SeesawParticipant, PlayerStuckRecovery, UserControlThirdPerson,
+CharacterPuppet) are never edited. Networking is added entirely via new
+Prefab Variants + one new "bridge" script that toggles existing components
+on/off from the outside - never touches their source.
+
+NAMING NOTE: the base prefab used to be named "Wolf.prefab" while the lobby
+already displayed "Ranger" for that character - the teammate authorized
+renaming the asset to match, so it's now Assets/Mahmoud SandBox/Characters
+Prefabs/Ranger.prefab (renamed via git mv, GUID/references unaffected). No
+more Wolf/Ranger mismatch anywhere.
+
+FILES
+-----
+- Assets/Scripts/CharacterNetworking/NetworkedCharacterOwnership.cs (NEW,
+  loose file, no .asmdef/namespace - deliberately compiles in the same tier
+  as the Mahmoud SandBox/RootMotion scripts it references, so it can wire to
+  them directly without moving or editing a single one of those files). On
+  OnStartClient(), enables the full control/camera/interaction stack ONLY
+  for the owning client; on every other client's copy it disables
+  UserControlThirdPerson + CharacterPuppet + CharacterAnimationThirdPerson +
+  the interaction scripts and makes the Rigidbody kinematic, handing full
+  movement authority to NetworkTransform instead.
+- Assets/Scripts/Networking/Game/ClientIdentityBroadcast.cs (NEW) +
+  additions to NetworkLobbyBridge.cs - a small handshake so the server can
+  tell which FishNet connection belongs to which Steam lobby member (the
+  transport doesn't expose that natively). Registered as soon as the server
+  starts (not when the Game scene loads) specifically to avoid a race where
+  a remote client's identity could arrive before anything is listening;
+  received identities are cached so a late subscriber (the spawner) can
+  catch up instead of missing anything.
+- Assets/Scripts/Networking/Game/GameSceneCharacterSpawner.cs (REWRITTEN) -
+  capsule code fully removed. Server-only: for each identity handshake
+  received, looks up that player's AssignedCharacter, spawns the matching
+  networked prefab variant via FishNet's ServerManager.Spawn(), owned by
+  that connection.
+- Assets/Scripts/Networking/Game/NetworkedCharacters/{Bruno,Ranger,Zara,
+  Pixel}_Networked.prefab (NEW) - Prefab Variants of the 4 base characters.
+  Each has NetworkObject + NetworkedCharacterOwnership on the root,
+  NetworkTransform on the "Character Controller" child, NetworkAnimator on
+  the "Animation Controller" child.
+
+SCENE SETUP (once)
+-------------------
+1. The 4 _Networked prefab variants must exist (see FILES above) with all
+   4 new components added and NetworkedCharacterOwnership's 10 reference
+   fields wired (Camera Controller, Character Camera Object, User Control,
+   Character Puppet, Character Animation, Character Rigidbody, Grapple
+   Controller, Object Grab Controller, Gate Pull Controller, Seesaw
+   Participant - all pulled from the same prefab's own hierarchy; Character
+   Animation is dragged from the "Animation Controller" child).
+2. FishNet auto-registers any NetworkObject prefab into
+   Assets/DefaultPrefabObjects.asset on save (via its Editor
+   PrefabCollectionGenerator) - no manual registration step needed.
+3. In Demo_Island.unity, add an empty GameObject ("CharacterSpawner") with
+   Game Scene Character Spawner attached. Wire its Character Prefabs list
+   (4 entries: Bruno/Ranger/Zara/Pixel -> matching _Networked prefab).
+   Leave Spawn Points empty to use the auto-spread fallback, which is
+   relative to wherever this GameObject itself is placed in the scene (so
+   place it ON the island, not at the scene origin).
+4. The static Bruno character instance that used to sit pre-placed in
+   Demo_Island (from the teammate's original "Character Prefabs" commit)
+   has been removed from the scene with the teammate's authorization -
+   confirmed clean, no leftover ragdoll/component fragments.
+
+KNOWN HARMLESS WARNING
+------------------------
+While adding NetworkObject to multiple prefabs in the same editing session,
+you may see a Console error like: "Assets X and Y have the same assetPath
+hash of 0. Please modify the prefab name of either to resolve." This is
+FishNet's auto-generator catching prefabs mid-save, before it's finished
+computing each one's unique hash (which briefly defaults to 0, not a real
+name collision - the 4 character names are obviously distinct). It does
+not reappear once all prefabs are fully saved. Confirmed via FishNet's own
+source (DefaultPrefabObjects.cs) - safe to ignore.
+
+HOW TO TEST
+-----------
+1. Full existing flow: lobby -> character assignment -> host clicks Start
+   -> FishNet auto-connects -> Demo_Island loads for everyone (Step 4).
+2. Each client should see their OWN assigned character, fully playable
+   (movement, camera, grapple, object grab all working exactly as before -
+   this is the single-player behavior, untouched).
+3. Each client should also see EVERY OTHER player's character, moving
+   smoothly as that player actually moves - no jitter, no fighting-physics
+   symptoms (confirms the non-owner Rigidbody.isKinematic + disabled
+   CharacterPuppet combination is working).
+4. Only the local player's camera/AudioListener should be active per
+   client.
+5. A remote player's Animator should visibly reflect their real movement,
+   not a frozen/default pose (NetworkAnimator working).
+
+POST-TESTING FIXES (found during first real 2-player test, now resolved)
+----------------------------------------------------------------------------
+Real multiplayer testing with a teammate surfaced two bugs. Both are now
+fixed; a third, related issue was found and fixed along the way.
+
+BUG 1 - Local camera didn't follow the player
+  Root cause: CameraController._camera was left unassigned on the base
+  prefab, so it fell back to Camera.main in Awake() - unreliable the moment
+  more than one camera exists in the scene at once (exactly the case once 4
+  networked characters are spawned). This is a scene-wiring issue, not a
+  code bug - CameraController.cs itself was never touched.
+  Fix (manual, Inspector only, done per _Networked variant): drag that
+  variant's own "Character Camera" GameObject's Camera component into
+  CameraController's "Camera" field on the root.
+  Also found + fixed along the way: "Character Camera" was overridden to
+  Active=true on some variants (from earlier experimentation) - this would
+  have left every spawned instance's camera/AudioListener active
+  simultaneously, regardless of ownership. Fixed by reverting/unchecking
+  Active on "Character Camera" so it stays at its correct prefab-default
+  inactive state (NetworkedCharacterOwnership is the only thing that should
+  ever activate it, and only for the owner). Verified via direct .prefab
+  inspection: all 4 variants now correctly wired and inactive-by-default.
+
+BUG 2 - Remote players' characters moved but never animated
+  Root cause: CharacterAnimationThirdPerson runs its own independent
+  Update() that reads CharacterPuppet.animState and writes Animator
+  parameters every frame, completely regardless of any other script's
+  enabled state. It was never being disabled on non-owner instances, so it
+  kept re-applying frozen/stale local animState data every tick, fighting
+  NetworkAnimator's correct incoming values from the network.
+  Fix (code): added a Character Animation field to
+  NetworkedCharacterOwnership.cs, disabled for non-owners exactly like
+  UserControlThirdPerson/CharacterPuppet already were. Requires the new
+  field to be wired on all 4 _Networked variants (see SCENE SETUP above).
+
+OUT OF SCOPE FOR THIS STEP
+-----------------------------
+Ragdoll/knockdown sync (stays local-only per client), grapple/object-grab/
+gate-pull/seesaw interaction EFFECTS sync (stay functional for the owner
+locally, but aren't replicated to others yet), true movement
+prediction/reconciliation (this is straightforward client-authoritative
+NetworkTransform replication, not FishNet's fuller predict+reconcile
+architecture - a deliberate scope choice driven by the zero-teammate-file-
+modification constraint).
+
+================================================================================
  CHANGELOG
 ================================================================================
 - Step 1 added: Steam Identity (display name + avatar).
@@ -412,3 +561,20 @@ Steam), but is expected and safe when a teammate tests without Steam open.
   Game scene locally once its own connection succeeds - resolving Step 3's
   "local only" limitation. NetworkConnectionDebugProbe.cs (the raw
   connectivity test harness) removed, superseded by NetworkLobbyBridge.cs.
+- Step 5 added: real character prefabs (Bruno/Ranger/Zara/Pixel) replace
+  the placeholder capsules, fully networked (NetworkObject/NetworkTransform/
+  NetworkAnimator on new Prefab Variants + a new NetworkedCharacterOwnership
+  bridge script) - every player now sees every other player's character
+  move and animate live, with zero modification to any teammate-owned
+  script or the base prefabs. Wolf.prefab renamed to Ranger.prefab
+  (teammate-authorized) to match the name already used everywhere else.
+  GameSceneCharacterSpawner.cs rewritten from scratch (capsule code fully
+  removed) to spawn server-side via a new Steam-identity <-> FishNet-
+  connection handshake (ClientIdentityBroadcast).
+- Step 5 fix: after the first real 2-player test, fixed remote players not
+  animating (CharacterAnimationThirdPerson now disabled for non-owners too,
+  via a new Character Animation field on NetworkedCharacterOwnership.cs)
+  and the local camera not following the player (CameraController.Camera
+  field wiring, plus reverting a stray Active=true override on "Character
+  Camera" found on some variants during the same pass). See the
+  "POST-TESTING FIXES" section under Step 5 above for full details.
