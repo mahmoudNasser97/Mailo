@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8fb23a6a21f22e241a96c939197c06b8, type: 3}
+  m_Name: RagdollProfile
+  m_EditorClassIdentifier: ActiveRagdoll::ActiveRagdoll.RagdollProfile
+  springHips: 2000
+  springSpine: 1200
+  springLegs: 3000
+  springFeet: 1500
+  springArms: 500
+  damperScale: 0.08
+  maxForce: 100000
+  hipKp: 400
+  hipKd: 40
+  ankleKp: 100
+  gravityCompensation: 0.5
+  comVelocitySmoothing: 0.2
+  stepDuration: 0.3
+  stepHeight: 0.15
+  maxStanceOffset: 0.25
+  minStanceTime: 0.15
+  maxStanceTime: 0.6
+  stepOutwardBias: 0.08
+  maxStepDistance: 0.6
+  ignoreThreshold: 1
+  maxImpulse: 40
+  poiseCapacity: 30
+  spinWeight: 0.5
+  regenRate: 0.5
+  impactCooldown: 0.1
+  multHead: 2
+  multChest: 1
+  multSpine: 1
+  multHips: 1.2
+  multLegs: 1.4
+  multFoot: 1
+  multArms: 0.4
+  flinchThreshold: 0.9
+  staggerThreshold: 0.5
+  knockdownThreshold: 0.15
+  driveRampDuration: 0.15
+  legRampDelay: 0
+  armRampDelay: 0.08
+  restEnergyThreshold: 3
+  restDuration: 0.4
+  getUpRampDuration: 0.9
+  grabBreakForce: 2000
+  grabBreakTorque: 2000
+  grabRadius: 0.15

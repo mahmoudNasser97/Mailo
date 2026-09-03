@@ -1,0 +1,7 @@
+{
+    "name": "NasserActiveRagdoll.Runtime",
+    "rootNamespace": "NasserActiveRagdoll",
+    "references": [],
+    "autoReferenced": true,
+    "noEngineReferences": false
+}

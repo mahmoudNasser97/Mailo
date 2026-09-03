@@ -1,0 +1,11 @@
+{
+  "name": "com.nasser.active-ragdoll-system",
+  "version": "0.5.33",
+  "displayName": "Nasser Active Ragdoll System",
+  "description": "Physics-driven humanoid characters with self-balancing active ragdolls, physics hands, a unified grab/throw/impact system, generated blend-tree animation, and a one-window setup wizard. No third-party dependencies.",
+  "unity": "2022.3",
+  "unityRelease": "0f1",
+  "keywords": ["ragdoll", "physics", "character", "coop", "grab", "active ragdoll"],
+  "author": { "name": "Mahmoud Nasser" },
+  "hideInEditor": false
+}

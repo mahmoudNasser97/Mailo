@@ -1,0 +1,52 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03dad6862cd4143458efa45a9d267077, type: 3}
+  m_Name: RagdollProfile
+  m_EditorClassIdentifier: NasserActiveRagdoll.Runtime::NasserActiveRagdoll.RagdollProfile
+  totalMass: 66
+  controllerMass: 40
+  baseSpring: 2500
+  baseDamper: 120
+  armStrength: 0.35
+  legStrength: 1.2
+  rideHeight: 0.9
+  rideSpring: 4000
+  rideDamper: 250
+  maxSpeed: 4.5
+  acceleration: 120
+  maxAccelForce: 1800
+  jumpVelocity: 8
+  pelvisSpring: 900
+  pelvisDamper: 60
+  uprightSpring: 900
+  uprightDamper: 90
+  leanIntoMotion: 0.12
+  knockdownImpulse: 12
+  weakSpotMultiplier: 2.5
+  accumulationWindow: 0.5
+  limpStrength: 0.06
+  grabbedStrength: 0.18
+  minimumDownTime: 1
+  thrownMinimumDownTime: 1.6
+  getUpDuration: 0.85
+  reachSpring: 420
+  reachDamper: 26
+  maxReachForce: 1100
+  gripSpring: 30000
+  throwForceMultiplier: 1.4
+  maxThrowSpeed: 16
+  grabRadius: 0.2
+  encumberedSpeedFactor: 0.45
+  encumbranceReferenceMass: 40
+  lookSensitivity: 2
+  standingTiltFollow: 0.15
+  ragdolledTiltFollow: 0.9

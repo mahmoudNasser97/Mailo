@@ -1,0 +1,7 @@
+{
+    "name": "NasserActiveRagdoll.Editor",
+    "rootNamespace": "NasserActiveRagdoll.EditorTools",
+    "references": [ "NasserActiveRagdoll.Runtime" ],
+    "includePlatforms": [ "Editor" ],
+    "autoReferenced": true
+}
